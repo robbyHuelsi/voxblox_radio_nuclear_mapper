@@ -46,7 +46,7 @@ IntensityServer::IntensityServer(const ros::NodeHandle& nh,
 
   // Set up subscriber.
   intensity_image_sub_ = nh_private_.subscribe(
-      "intensity_image", 1, &IntensityServer::intensityImageCallback, this);
+      "intensity_image", 1, &IntensityServer::intensityImageCallback, this); // /front_chassis_cam/image_raw_throttled
 }
 
 void IntensityServer::updateMesh() {
@@ -74,6 +74,21 @@ void IntensityServer::publishPointclouds() {
 
 void IntensityServer::intensityImageCallback(
     const sensor_msgs::ImageConstPtr& image) {
+
+//     todo
+//    unsigned int min_pxl = 255;
+//    unsigned int max_pxl = 0;
+//    // unsigned int d[image->height*image->width];
+//    for (int l = 0; l < image->height*image->width-1; ++l) {
+//        // d[l] = image->data[l];
+//        if (image->data[l] < min_pxl) {min_pxl = image->data[l];}
+//        if (image->data[l] > max_pxl) {max_pxl = image->data[l];}
+//    }
+//    //ROS_INFO_STREAM("img header: " << image->header);
+//    ROS_INFO_STREAM("img: min: " << min_pxl);
+//    ROS_INFO_STREAM("img: max: " << max_pxl);
+//    //cv::imshow("view", cv_bridge::toCvShare(image, "bgr8")->image);
+
   CHECK(intensity_layer_);
   CHECK(intensity_integrator_);
   CHECK(image);
@@ -85,7 +100,8 @@ void IntensityServer::intensityImageCallback(
     return;
   }
 
-  cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image);
+  cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image); //todo "mono8"
+  ROS_INFO_STREAM("Type: " << cv_ptr->image.type()); // todo
 
   CHECK(cv_ptr);
 
@@ -103,23 +119,45 @@ void IntensityServer::intensityImageCallback(
 
   size_t k = 0;
   size_t m = 0;
+  // todo
+    float min_pxl = 1.0;
+    float max_pxl = 0.0;
+
   for (int i = 0; i < cv_ptr->image.rows; i++) {
     const float* image_row = cv_ptr->image.ptr<float>(i);
     for (int j = 0; j < cv_ptr->image.cols; j++) {
+
+        // todo
+        if (image_row[j] < min_pxl) {min_pxl = image_row[j];}
+        if (image_row[j] > max_pxl) {max_pxl = image_row[j];}
+
       if (m % subsample_factor_ == 0) {
         // Rotates the vector pointing from the camera center to the pixel
         // into the global frame, and normalizes it.
         bearing_vectors.push_back(
             T_G_C.getRotation().toImplementation() *
             Point(j - half_col, i - half_row, focal_length_px_).normalized());
-        intensities.push_back(image_row[j]);
+        intensities.push_back(image_row[j] * 40.0);
         k++;
       }
       m++;
     }
   }
 
+  //todo
+  ROS_INFO_STREAM("img: min: " << min_pxl);
+  ROS_INFO_STREAM("img: max: " << max_pxl);
+
   // Put this into the integrator.
+    ROS_INFO_STREAM("bearing_vectors: (length=" << bearing_vectors.size() << ")");
+    ROS_INFO_STREAM("intensities: length: " << intensities.size() << ")");
+    ROS_INFO_STREAM("             min:    " << *std::min_element(intensities.begin(), intensities.end()));
+    ROS_INFO_STREAM("             max:    " << *std::max_element(intensities.begin(), intensities.end()));
+    ROS_INFO_STREAM("origin: " << T_G_C.getPosition());
+
+//    for (std::vector<float>::iterator it = intensities.begin() ; it != intensities.end(); ++it) {
+//        ROS_INFO_STREAM("    " << *it);
+//    }
   intensity_integrator_->addIntensityBearingVectors(
       T_G_C.getPosition(), bearing_vectors, intensities);
 }

@@ -39,8 +39,7 @@ void IntensityIntegrator::addIntensityBearingVectors(
         intensity_layer_->allocateBlockPtrByCoordinates(surface_intersection);
     IntensityVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
-    voxel.intensity =
-        (voxel.weight * voxel.intensity + intensities[i]) / (voxel.weight + 1);
+    voxel.intensity = intensities[i];
     voxel.weight += 1.0;
     if (voxel.weight > max_weight_) {
       voxel.weight = max_weight_;
@@ -56,10 +55,10 @@ void IntensityIntegrator::addIntensityBearingVectors(
       Block<IntensityVoxel>::Ptr new_block_ptr =
           intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
       IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
-      if (new_voxel.weight < 1e-6) {
+      //if (new_voxel.weight < 1e-6) {
         new_voxel.intensity = intensities[i];
         new_voxel.weight += 1.0;
-      }
+      //}
     }
   }
 }

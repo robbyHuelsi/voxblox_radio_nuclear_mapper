@@ -227,6 +227,9 @@ void TsdfServer::processPointCloudMessageAndInsert(
     }
   }
 
+  color_pointcloud = false;
+   has_intensity = false;
+
   Pointcloud points_C;
   Colors colors;
   timing::Timer ptcloud_timer("ptcloud_preprocess");

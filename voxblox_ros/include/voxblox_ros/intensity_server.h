@@ -12,6 +12,12 @@
 #include "voxblox_ros/intensity_vis.h"
 #include "voxblox_ros/tsdf_server.h"
 
+//todo
+#include <string>
+#include <ros/ros.h>
+#include <image_transport/image_transport.h>
+#include <opencv2/highgui/highgui.hpp>
+
 namespace voxblox {
 
 class IntensityServer : public TsdfServer {

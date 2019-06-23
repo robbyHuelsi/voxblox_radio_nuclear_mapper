@@ -17,6 +17,8 @@ inline void recolorVoxbloxMeshMsgByIntensity(
   CHECK_NOTNULL(mesh_msg);
   CHECK(color_map);
 
+    // ROS_INFO("recolorVoxbloxMeshMsgByIntensity(...)");
+
   // Go over all the blocks in the mesh.
   for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
     // Look up verticies in the thermal layer.
@@ -29,6 +31,9 @@ inline void recolorVoxbloxMeshMsgByIntensity(
       const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(
           Point(mesh_block.x[vert_idx], mesh_block.y[vert_idx],
                 mesh_block.z[vert_idx]));
+
+        if (voxel != nullptr) {ROS_INFO("voxel not nullptr");}
+
       if (voxel != nullptr && voxel->weight > 0.0) {
         float intensity = voxel->intensity;
         Color new_color = color_map->colorLookup(intensity);
