@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(voxblox_ros)
 
-find_package(catkin_simple REQUIRED)
-catkin_simple(ALL_DEPS_REQUIRED)
+find_package(catkin_simple REQUIRED
+        abc_msgs_fkie)
+catkin_simple(ALL_DEPS_REQUIRED
+        abc_msgs_fkie)
 
 add_definitions(-std=c++11 -Wall -Wextra)
 
