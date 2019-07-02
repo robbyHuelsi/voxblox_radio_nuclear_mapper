@@ -55,8 +55,9 @@ class IntensityServer : public TsdfServer {
 
   // radiological nuclear mapper
   std::string radiation_sensor_frame_id_;
-  int radiation_msg_val_min_;
-  int radiation_msg_val_max_;
+  float radiation_msg_val_min_;
+  float radiation_msg_val_max_;
+  bool radiation_msg_use_log_;
   int radiation_image_height_;
   int radiation_image_width_;
   float radiation_image_max_dist_;

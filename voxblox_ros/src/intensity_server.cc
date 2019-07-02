@@ -37,16 +37,24 @@ IntensityServer::IntensityServer(const ros::NodeHandle& nh,
   std::string radiation_sensor_topic;
   nh_private_.param<std::string>("radiation_sensor_topic", radiation_sensor_topic, "");
   nh_private_.param<std::string>("radiation_sensor_frame_id", radiation_sensor_frame_id_, "");
-  nh_private_.param("radiation_msg_val_min", radiation_msg_val_min_, 0);
-  nh_private_.param("radiation_msg_val_max", radiation_msg_val_max_, 100000);
+  nh_private_.param("radiation_msg_val_min", radiation_msg_val_min_, 0.0f);
+  nh_private_.param("radiation_msg_val_max", radiation_msg_val_max_, 100000.0f);
+  nh_private_.param("radiation_msg_use_log", radiation_msg_use_log_, false);
   nh_private_.param("radiation_image_image_width", radiation_image_width_, 100);
   nh_private_.param("radiation_image_image_height", radiation_image_height_, 100);
   nh_private_.param("radiation_image_dispersion", radiation_image_dispersion_, 1.0f);
 
   ROS_INFO_STREAM("Radiation sensor data topic: " << radiation_sensor_topic);
   ROS_INFO_STREAM("Radiation sensor frame id: " << radiation_sensor_frame_id_);
-  ROS_INFO_STREAM("Radiation sensor value range: [" << radiation_msg_val_min_ << ", " <<
+  ROS_INFO_STREAM("Radiation sensor value range (no log): [" << radiation_msg_val_min_ << ", " <<
                                                     radiation_msg_val_max_ << "]");
+  if(radiation_msg_use_log_){
+    radiation_msg_val_min_ = log(radiation_msg_val_min_);
+    radiation_msg_val_min_ = radiation_msg_val_min_ < 0.0 ? 0.0 : radiation_msg_val_min_;
+    radiation_msg_val_max_ = log(radiation_msg_val_max_);
+    ROS_INFO_STREAM("Radiation sensor value range (log): [" << radiation_msg_val_min_ << ", " <<
+                                                               radiation_msg_val_max_ << "]");
+  }
   ROS_INFO_STREAM("Radiation image size: " << radiation_image_width_ << "*" << radiation_image_height_);
 
   // Check parameter validity
@@ -188,8 +196,16 @@ void IntensityServer::radiationSensorCallback(
 //  float intensity = sin((float)msg->header.seq*3.1415/10.0) / 2;
 
   //Get intensity from radiation sensor subscriber message
-    float intensity = (float)radiation_msg_val_min_ + (float)msg->value /
-                      (float)(radiation_msg_val_max_-radiation_msg_val_min_);
+  float intensity = (float)msg->value;
+
+  // Use logarithmic mapping if needed
+  if(radiation_msg_use_log_){
+    intensity = log(intensity);
+  }
+
+  // Normalize between 0.0 and 1.0
+  intensity = radiation_msg_val_min_ + intensity / (radiation_msg_val_max_ - radiation_msg_val_min_);
+
   if (intensity < 0.0) {
     intensity = 0.0;
     ROS_WARN_STREAM("Radiation sensor value is smaller than minimum (" << radiation_msg_val_min_ << ")");
@@ -199,7 +215,7 @@ void IntensityServer::radiationSensorCallback(
     ROS_WARN_STREAM("Radiation sensor value is higher than maximum (" << radiation_msg_val_max_ << ")");
   }
 //  float intensity = (float)msg->value;
-  ROS_INFO_STREAM("Intensity: " << intensity);
+  ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
 
   // Look up transform
   Transformation T_G_C;
@@ -215,10 +231,10 @@ void IntensityServer::radiationSensorCallback(
   // Create intensity image
   for (int row = 0; row < float_img.rows; ++row) {
     for (int col = 0; col < float_img.cols; ++col) {
-      float sq_dist = squared_distance(row - radiation_image_height_ / 2, col - radiation_image_width_ / 2) / radiation_image_max_dist_; //TODO
+      //float sq_dist = squared_distance(row - radiation_image_height_ / 2, col - radiation_image_width_ / 2) / radiation_image_max_dist_; //TODO
       //float sq_dist = distance(row - image_height_ / 2, col - image_width_ / 2) / max_dist_;
-      float value = (1.0-radiation_image_dispersion_ *sq_dist) * intensity;
-      //float value = intensity;
+      //float value = (1.0-radiation_image_dispersion_ *sq_dist) * intensity;
+      float value = intensity;
       value = value < 0.0 ? 0.0 : (value > 1.0 ? 1.0 : value);
       float_img.at<float>(row, col, 0) = value;
       uint_img.at<unsigned int>(row, col, 0) = (unsigned int)round(value * 255.0);

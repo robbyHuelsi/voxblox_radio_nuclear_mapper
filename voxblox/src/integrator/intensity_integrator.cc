@@ -30,7 +30,13 @@ void IntensityIntegrator::addIntensityBearingVectors(
         tsdf_layer_, origin, bearing_vectors[i], max_distance_,
         &surface_intersection);
 
-    if (!dist_to_surface.closer_than_max_dist or dist_to_surface.distance < 0.1) {
+    if(!dist_to_surface.closer_than_max_dist){
+      printf("Too far away (%f m). \n", dist_to_surface.distance);
+      continue;
+    }
+
+    if(dist_to_surface.distance < 0.1){
+      printf("Too close (%f m). \n", dist_to_surface.distance);
       continue;
     }
 
