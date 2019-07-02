@@ -17,6 +17,7 @@ namespace voxblox {
 struct DistanceUtilsResult {
   double distance;
   double closer_than_max_dist;
+  //Point intersection_point;
 };
 
 template <typename VoxelType>
@@ -39,7 +40,9 @@ DistanceUtilsResult getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
 
   bool surface_found = false;
 
+  //Point current_pos;
   while (t < max_distance) {
+    //current_pos = ray_origin + t * ray_direction;
     const Point current_pos = ray_origin + t * ray_direction;
     typename Block<VoxelType>::ConstPtr block_ptr =
         layer.getBlockPtrByCoordinates(current_pos);
@@ -85,6 +88,7 @@ DistanceUtilsResult getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
   DistanceUtilsResult res;
   res.distance = t;
   res.closer_than_max_dist = surface_found;
+  //res.intersection_point = current_pos;
   return res;
 }
 
