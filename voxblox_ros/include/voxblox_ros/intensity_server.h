@@ -60,6 +60,7 @@ class IntensityServer : public TsdfServer {
   int radiation_image_height_;
   int radiation_image_width_;
   float radiation_image_max_dist_;
+  float radiation_image_dispersion_;
   unsigned int radiation_msg_step_;
   ros::Subscriber radiation_sensor_sub_;
   float distance(int x, int y);

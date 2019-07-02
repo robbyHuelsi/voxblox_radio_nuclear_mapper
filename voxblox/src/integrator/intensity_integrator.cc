@@ -31,6 +31,9 @@ void IntensityIntegrator::addIntensityBearingVectors(
         &surface_intersection);
 
     bool success = dist_to_surface.closer_than_max_dist;
+    float distance = dist_to_surface.distance / max_distance_;
+    float intensity = intensities[i] * distance * distance;
+    printf("Distance: %f; Raw Intensity: %f, Calculated Intensity: %f\n", distance, intensities[i], intensity);
 
 
     if (!success) {
@@ -43,12 +46,17 @@ void IntensityIntegrator::addIntensityBearingVectors(
         intensity_layer_->allocateBlockPtrByCoordinates(surface_intersection);
     IntensityVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
-    voxel.intensity =
-        (voxel.weight * voxel.intensity + intensities[i]) / (voxel.weight + 1);
-    voxel.weight += 1.0;
-    if (voxel.weight > max_weight_) {
-      voxel.weight = max_weight_;
+//    voxel.intensity =
+//        (voxel.weight * voxel.intensity + intensities[i]) / (voxel.weight + 1);
+//    voxel.weight += 1.0;
+//    if (voxel.weight > max_weight_) {
+//      voxel.weight = max_weight_;
+//    }
+    if (intensity > voxel.intensity) {
+      voxel.intensity = intensity;
     }
+    voxel.weight = max_weight_;
+
 
     // Now check the surrounding voxels along the bearing vector. If they have
     // never been observed, then fill in their value. Otherwise don't.
@@ -60,10 +68,14 @@ void IntensityIntegrator::addIntensityBearingVectors(
       Block<IntensityVoxel>::Ptr new_block_ptr =
           intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
       IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
-      if (new_voxel.weight < 1e-6) {
-        new_voxel.intensity = intensities[i];
-        new_voxel.weight += 1.0;
+//      if (new_voxel.weight < 1e-6) { //todo: nochmal checken, was das für Auswirkungen hat
+//        new_voxel.intensity = intensities[i];
+//        new_voxel.weight += 1.0;
+      if (intensity > new_voxel.intensity) {
+        new_voxel.intensity = intensity;
       }
+      new_voxel.weight = max_weight_;
+//      }
     }
   }
 }
