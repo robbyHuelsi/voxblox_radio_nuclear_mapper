@@ -25,9 +25,13 @@ void IntensityIntegrator::addIntensityBearingVectors(
     Point surface_intersection = Point::Zero();
     // Cast ray from the origin in the direction of the bearing vector until
     // finding an intersection with a surface.
-    bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
+    DistanceUtilsResult dist_to_surface = getSurfaceDistanceAlongRay<TsdfVoxel>(
+//    bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
         tsdf_layer_, origin, bearing_vectors[i], max_distance_,
         &surface_intersection);
+
+    bool success = dist_to_surface.closer_than_max_dist;
+
 
     if (!success) {
       continue;
