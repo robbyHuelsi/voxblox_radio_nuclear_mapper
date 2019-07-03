@@ -190,7 +190,7 @@ void IntensityServer::radiationSensorCallback(
   CHECK(intensity_layer_);
   CHECK(intensity_integrator_);
   CHECK(msg);
-  ROS_INFO_STREAM("Msg value: " << msg->value);
+  //ROS_INFO_STREAM("Msg value: " << msg->value);
   // Simulate nuclear intensity
 //  float intensity = 0.5;
 //  float intensity = sin((float)msg->header.seq*3.1415/10.0) / 2;
@@ -208,14 +208,14 @@ void IntensityServer::radiationSensorCallback(
 
   if (intensity < 0.0) {
     intensity = 0.0;
-    ROS_WARN_STREAM("Radiation sensor value is smaller than minimum (" << radiation_msg_val_min_ << ")");
+    //ROS_WARN_STREAM("Radiation sensor value is smaller than minimum (" << radiation_msg_val_min_ << ")");
   }
   if (intensity > 1.0) {
     intensity = 1.0;
-    ROS_WARN_STREAM("Radiation sensor value is higher than maximum (" << radiation_msg_val_max_ << ")");
+    //ROS_WARN_STREAM("Radiation sensor value is higher than maximum (" << radiation_msg_val_max_ << ")");
   }
 //  float intensity = (float)msg->value;
-  ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
+  //ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
 
   // Look up transform
   Transformation T_G_C;

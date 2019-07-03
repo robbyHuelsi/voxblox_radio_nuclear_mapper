@@ -22,6 +22,12 @@ void IntensityIntegrator::addIntensityBearingVectors(
   const FloatingPoint voxel_size = tsdf_layer_.voxel_size();
 
   for (size_t i = 0; i < bearing_vectors.size(); ++i) {
+
+    if(intensities[i] < 0.1){
+      //printf("Intensity too small (%f). \n", intensities[i]);
+      continue;
+    }
+
     Point surface_intersection = Point::Zero();
     // Cast ray from the origin in the direction of the bearing vector until
     // finding an intersection with a surface.
@@ -31,19 +37,19 @@ void IntensityIntegrator::addIntensityBearingVectors(
         &surface_intersection);
 
     if(!dist_to_surface.closer_than_max_dist){
-      printf("Too far away (%f m). \n", dist_to_surface.distance);
+      //printf("Too far away (%f m). \n", dist_to_surface.distance);
       continue;
     }
 
     if(dist_to_surface.distance < 0.1){
-      printf("Too close (%f m). \n", dist_to_surface.distance);
+      //printf("Too close (%f m). \n", dist_to_surface.distance);
       continue;
     }
 
     float distance = dist_to_surface.distance / max_distance_;
     float new_intensity = intensities[i] * distance * distance;
     float new_weight = (1.0 - distance);
-    printf("d/d_max: %f; intensity_img: %f, intensity_res: %f\n", distance, intensities[i], new_intensity);
+    //printf("d/d_max: %f; intensity_img: %f, intensity_res: %f\n", distance, intensities[i], new_intensity);
 
     // Now look up the matching voxels in the intensity layer and mark them.
     // Let's just start with 1.
