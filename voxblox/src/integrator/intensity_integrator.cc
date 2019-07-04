@@ -35,7 +35,7 @@ void IntensityIntegrator::addIntensityBearingVectors(
     return;
   }
 
-  float distance = m.distance / max_distance_;
+  float distance = m.distance;
 //  printf("middle_int: %d; middle_point: (%f, %f, %f), assumed_intensity: %f\n",
 //      middle_int, middle_point[0], middle_point[1], middle_point[2], m.distance);
 
@@ -60,10 +60,10 @@ void IntensityIntegrator::addIntensityBearingVectors(
       continue;
     }
 
-    if(d.distance < 0.1){
-//      printf("Too close (%f m). \n", d.distance);
-      continue;
-    }
+//    if(d.distance < 0.1){
+////      printf("Too close (%f m). \n", d.distance);
+//      continue;
+//    }
 
     float new_intensity = intensities[i] * distance * distance;
     //float new_weight = (1.0 - distance);
@@ -95,16 +95,17 @@ void IntensityIntegrator::addIntensityBearingVectors(
     IntensityVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
     // Version 0
-    voxel.intensity =
-        (voxel.weight * voxel.intensity + new_intensity) / (voxel.weight + 1);
-    voxel.weight += 1.0;
-    if (voxel.weight > max_weight_) {
+//    voxel.intensity =
+//        (voxel.weight * voxel.intensity + new_intensity) / (voxel.weight + 1);
+//    voxel.weight += 1.0;
+//    if (voxel.weight > max_weight_) {
+//      voxel.weight = max_weight_;
+//    }
+    // Version 2 - Max Filter
+    if (new_intensity > voxel.intensity) {
+      voxel.intensity = new_intensity;
       voxel.weight = max_weight_;
     }
-    // Version 2
-//    if (intensity > voxel.intensity) {
-//      voxel.intensity = intensity;
-//    }
     // Version 3
 //    voxel.intensity =
 //        (voxel.weight * voxel.intensity + intensity * new_weight) / (voxel.weight + new_weight);
@@ -123,21 +124,22 @@ void IntensityIntegrator::addIntensityBearingVectors(
       Block<IntensityVoxel>::Ptr new_block_ptr =
           intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
       IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
-      if (new_voxel.weight < 1e-6) { //todo: nochmal checken, was das für Auswirkungen hat
+//      if (new_voxel.weight < 1e-6) { //todo: nochmal checken, was das für Auswirkungen hat
         // Version 0
-        new_voxel.intensity =
-            (new_voxel.weight * new_voxel.intensity + new_intensity) / (new_voxel.weight + 1);
-        new_voxel.weight = 1.0;
-        if (new_voxel.weight > max_weight_) {
-          new_voxel.weight = max_weight_;
-        }
+//        new_voxel.intensity =
+//            (new_voxel.weight * new_voxel.intensity + new_intensity) / (new_voxel.weight + 1);
+//        new_voxel.weight = 1.0;
+//        if (new_voxel.weight > max_weight_) {
+//          new_voxel.weight = max_weight_;
+//        }
         // Version 1
 //        new_voxel.intensity = intensities[i];
 //        new_voxel.weight += 1.0;
-        // Version 2
-//        if (intensity > new_voxel.intensity) {
-//          new_voxel.intensity = intensity;
-//        }
+        // Version 2 - Max Filter
+        if (new_intensity > new_voxel.intensity) {
+          new_voxel.intensity = new_intensity;
+          voxel.weight = max_weight_;
+        }
         // Version 3
 //        new_voxel.intensity =
 //            (new_voxel.weight * new_voxel.intensity + intensity * new_weight) / (new_voxel.weight + new_weight);
@@ -145,7 +147,7 @@ void IntensityIntegrator::addIntensityBearingVectors(
 //        if (new_voxel.weight > max_weight_) {
 //          new_voxel.weight = max_weight_;
 //        }
-      }
+//      }
     }
   }
 }
