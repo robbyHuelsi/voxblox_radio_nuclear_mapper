@@ -35,7 +35,7 @@ void IntensityIntegrator::addIntensityBearingVectors(
     return;
   }
 
-  float distance = m.distance;
+//  float distance = m.distance;
 //  printf("middle_int: %d; middle_point: (%f, %f, %f), assumed_intensity: %f\n",
 //      middle_int, middle_point[0], middle_point[1], middle_point[2], m.distance);
 
@@ -65,7 +65,7 @@ void IntensityIntegrator::addIntensityBearingVectors(
 //      continue;
 //    }
 
-    float new_intensity = intensities[i] * distance * distance;
+    float new_intensity = intensities[i]; // * distance * distance;
     //float new_weight = (1.0 - distance);
 
 //    if(assumed_intensity > 0.0) {
@@ -81,8 +81,8 @@ void IntensityIntegrator::addIntensityBearingVectors(
 //      }
 
       //float new_weight = (1.0 - distance);
-      printf("d_1: %f; intensity_img: %f, intensity_res: %f\n", d.distance,
-             intensities[i], new_intensity);
+//      printf("d_1: %f; intensity_img: %f, intensity_res: %f\n", d.distance,
+//             intensities[i], new_intensity);
 //    }else{
 //      intensity = 0.0;
 //      printf("intensity: 0\n");
