@@ -64,17 +64,17 @@ namespace voxblox {
             Point(mesh_x, mesh_y, mesh_z));
 
         //std::cout << "Voxel: x: " << mesh_x << std::endl;
-        std::cout << "Voxel: X: " << mesh_x << "; y: " << mesh_y << "; z: " << mesh_z << std::endl;
+//        std::cout << "Voxel: X: " << mesh_x << "; y: " << mesh_y << "; z: " << mesh_z << std::endl;
 
         if (voxel == nullptr) {
           //printf("voxel is null pointer!");
         } else if (voxel->weight <= 0.0) {
-          std::cout << "weight too small" << std::endl;
+//          std::cout << "weight too small" << std::endl;
         }
         if (voxel != nullptr && voxel->weight > 0.0) {
           float intensity = voxel->intensity;
           //printf("Intensity: %f", intensity);
-          std::cout << "Intensity: " << intensity << std::endl;
+//          std::cout << "Intensity: " << intensity << std::endl;
           Color new_color = color_map->colorLookup(intensity);
           mesh_block.r[vert_idx] = new_color.r;
           mesh_block.g[vert_idx] = new_color.g;
