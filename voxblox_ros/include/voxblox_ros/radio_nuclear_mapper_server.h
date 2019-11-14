@@ -9,12 +9,13 @@
 #include <voxblox/integrator/intensity_integrator.h>  // TODO
 #include <voxblox/utils/color_maps.h>
 
-#include "voxblox_ros/intensity_vis.h"
+#include "voxblox_ros/radio_nuclear_mapper_vis.h"
+#include "voxblox_ros/intensity_server.h"
 #include "voxblox_ros/tsdf_server.h"
 
 namespace voxblox {
 
-class RadioNuclearMapperServer : public TsdfServer {
+class RadioNuclearMapperServer : public IntensityServer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -22,7 +23,7 @@ class RadioNuclearMapperServer : public TsdfServer {
   virtual ~RadioNuclearMapperServer() {}
 
   virtual void updateMesh();
-  virtual void publishPointclouds();
+//  virtual void publishPointclouds();
 
   void intensityImageCallback(const sensor_msgs::ImageConstPtr& image);
 
