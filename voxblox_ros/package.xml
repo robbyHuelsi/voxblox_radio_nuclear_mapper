@@ -26,5 +26,5 @@
   <depend>voxblox</depend>
   <depend>voxblox_msgs</depend>
   <depend>voxblox_rviz_plugin</depend>
-  <depend>abc_msgs_fkie</depend>
+  <depend>abc_msgs_fkie</depend> <!-- radiological nuclear mapper -->
 </package>
