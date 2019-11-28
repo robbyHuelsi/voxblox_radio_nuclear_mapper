@@ -9,7 +9,7 @@ namespace voxblox {
 
     intensity_layer_.reset(new Layer<IntensityVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
                                                         tsdf_map_->getTsdfLayer().voxels_per_side()));
-    intensity_integrator_.reset(new IntensityIntegrator(tsdf_map_->getTsdfLayer(),
+    rnm_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
                                                            intensity_layer_.get()));
 
     // Get ROS params:
@@ -21,9 +21,9 @@ namespace voxblox {
     nh_private_.param("intensity_min_value", intensity_min_value, intensity_min_value);
     nh_private_.param("intensity_max_value", intensity_max_value, intensity_max_value);
 
-    FloatingPoint intensity_max_distance = intensity_integrator_->getMaxDistance();
+    FloatingPoint intensity_max_distance = rnm_integrator_->getMaxDistance();
     nh_private_.param("intensity_max_distance", intensity_max_distance, intensity_max_distance);
-    intensity_integrator_->setMaxDistance(intensity_max_distance);
+    rnm_integrator_->setMaxDistance(intensity_max_distance);
 
     // Get ROS params for radiological nuclear mapper
     std::string radiation_sensor_topic;
@@ -74,7 +74,7 @@ namespace voxblox {
     intensity_mesh_pub_ =
         nh_private_.advertise<voxblox_msgs::Mesh>("intensity_mesh", 1, true);
 
-    color_map_.reset(new IronbowColorMap());
+    color_map_.reset(new IronbowColorMap());  // TODO
     color_map_->setMinValue(intensity_min_value);
     color_map_->setMaxValue(intensity_max_value);
 
@@ -82,7 +82,7 @@ namespace voxblox {
 //  intensity_image_sub_ = nh_private_.subscribe(
 //      "intensity_image", 1, &RadioNuclearMapperServer::intensityImageCallback, this);
 
-
+    // TODO
     intensity_test_image_publisher_ = nh_private_.advertise<sensor_msgs::Image>("intensity_test_image", 1);
 
     // Subscribe nuclear intensity
@@ -128,7 +128,7 @@ namespace voxblox {
   void RadioNuclearMapperServer::intensityImageCallback(
       const sensor_msgs::ImageConstPtr& image) {
     CHECK(intensity_layer_);
-    CHECK(intensity_integrator_);
+    CHECK(rnm_integrator_);
     CHECK(image);
     // Look up transform first...
     Transformation T_G_C;
@@ -173,7 +173,7 @@ namespace voxblox {
     }
 
     // Put this into the integrator.
-    intensity_integrator_->addIntensityBearingVectors(
+    rnm_integrator_->addIntensityBearingVectors(
         T_G_C.getPosition(), bearing_vectors, intensities);
   }
 
@@ -181,7 +181,7 @@ namespace voxblox {
 //    abc_msgs_fkie::MeasurementRawConstPtr msg) {
       const abc_msgs_fkie::MeasurementRawConstPtr& msg) {
     CHECK(intensity_layer_);
-    CHECK(intensity_integrator_);
+    CHECK(rnm_integrator_);
     CHECK(msg);
     //ROS_INFO_STREAM("Msg value: " << msg->value);
     // Simulate nuclear intensity
@@ -268,13 +268,16 @@ namespace voxblox {
               Point(j - half_col, i - half_row, focal_length_px_).normalized());
           intensities.push_back(image_row[j]);
           k++;
+
+          //ROS_INFO_STREAM("T_G_C.getRotation() = " << T_G_C.getRotation());
+          //ROS_INFO_STREAM("point.normalized() = " << Point(j - half_col, i - half_row, focal_length_px_).normalized());
         }
         m++;
       }
     }
 
     // Put this into the integrator.
-    intensity_integrator_->addIntensityBearingVectors(
+    rnm_integrator_->addIntensityBearingVectors(
         T_G_C.getPosition(), bearing_vectors, intensities);
 
 //  radiation_msg_step_++;

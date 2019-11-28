@@ -6,7 +6,7 @@
 #include <memory>
 
 #include <voxblox/core/voxel.h>
-#include <voxblox/integrator/intensity_integrator.h>  // TODO
+#include <voxblox/integrator/radio_nuclear_mapper_integrator.h>  // TODO
 #include <voxblox/utils/color_maps.h>
 
 #include "voxblox_ros/radio_nuclear_mapper_vis.h"
@@ -50,7 +50,7 @@ class RadioNuclearMapperServer : public IntensityServer {
   // Intensity layer, integrator, and color maps, all related to storing
   // and visualizing intensity data.
   std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
-  std::unique_ptr<IntensityIntegrator> intensity_integrator_;
+  std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
 
   // Visualization tools.
   std::shared_ptr<ColorMap> color_map_;
