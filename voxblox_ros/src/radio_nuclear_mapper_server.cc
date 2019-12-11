@@ -6,9 +6,8 @@ namespace voxblox {
   IntensityServer(nh, nh_private) {
 
     cache_mesh_ = true;
-
     intensity_layer_.reset(new Layer<IntensityVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
-                                                        tsdf_map_->getTsdfLayer().voxels_per_side()));
+                                                     tsdf_map_->getTsdfLayer().voxels_per_side()));
     rnm_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
                                                            intensity_layer_.get()));
 
@@ -22,21 +21,23 @@ namespace voxblox {
     nh_private_.param("intensity_max_distance", intensity_max_distance, intensity_max_distance);
     rnm_integrator_->setMaxDistance(intensity_max_distance);
 
-    // Get ROS params for radiological nuclear mapper
-    std::string radiation_sensor_topic;
-    nh_private_.param<std::string>("radiation_sensor_topic", radiation_sensor_topic, "");
+    // Get ROS params for radiological nuclear mapper  // TODO: sort
+
+    nh_private_.param<std::string>("radiation_sensor_topic", radiation_sensor_topic_, "");
     nh_private_.param<std::string>("radiation_sensor_frame_id", radiation_sensor_frame_id_, "");
     nh_private_.param("radiation_msg_val_min", radiation_msg_val_min_, 0.0f);
     nh_private_.param("radiation_msg_val_max", radiation_msg_val_max_, 100000.0f);
     nh_private_.param("radiation_msg_use_log", radiation_msg_use_log_, false);
     nh_private_.param("radiation_ang_res_z", radiation_ang_res_y, 100);
     nh_private_.param("radiation_ang_res_z", radiation_ang_res_z, 100);
-    nh_private_.param("radiation_image_dispersion", radiation_image_dispersion_, 1.0f);
+    nh_private_.param("radiation_image_dispersion", radiation_image_dispersion_, 1.0f);  // TODO: ???
+    nh_private_.param<std::string>("radiation_distance_function", radiation_distance_function_, "constant");
+    rnm_integrator_->setDistanceFunction(radiation_distance_function_);
 
-    ROS_INFO_STREAM("Radiation sensor data topic: " << radiation_sensor_topic);
+    ROS_INFO_STREAM("Radiation sensor data topic: " << radiation_sensor_topic_);
     ROS_INFO_STREAM("Radiation sensor frame id: " << radiation_sensor_frame_id_);
     ROS_INFO_STREAM("Radiation sensor value range (no log): [" << radiation_msg_val_min_ << ", " <<
-                                                               radiation_msg_val_max_ << "]");
+                                                                       radiation_msg_val_max_ << "]");
     if(radiation_msg_use_log_){
       radiation_msg_val_min_ = log(radiation_msg_val_min_);
       radiation_msg_val_min_ = radiation_msg_val_min_ < 0.0 ? 0.0 : radiation_msg_val_min_;
@@ -44,10 +45,11 @@ namespace voxblox {
       ROS_INFO_STREAM("Radiation sensor value range (log): [" << radiation_msg_val_min_ << ", " <<
                                                               radiation_msg_val_max_ << "]");
     }
-    ROS_INFO_STREAM("Radiation image size: " << radiation_ang_res_y << "*" << radiation_ang_res_z);
+    ROS_INFO_STREAM("Radiation angular resolution: (y=" << radiation_ang_res_y << "; z=" << radiation_ang_res_z << ")");
+    ROS_INFO_STREAM("Radiation distance function: "<< radiation_distance_function_);
 
     // Check parameter validity
-    if (radiation_sensor_topic.empty()) {
+    if (radiation_sensor_topic_.empty()) {
       ROS_ERROR("ROS topic for radiological nuclear sensor data not specified.");
       ROS_INFO("Use parameter 'radiation_sensor_topic' next time.");
 //    ros::shutdown();
@@ -58,8 +60,19 @@ namespace voxblox {
 //    ros::shutdown();
 //    return EXIT_FAILURE;
     }
+    std::vector<std::string> allowed_funcs {"increasing", "decreasing", "constant"};
+    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), radiation_distance_function_) == allowed_funcs.end()){
+      // distance function string is not allowed
+      ROS_ERROR("Radiation distance function is called by a wrong string.");
+      std::stringstream allowed_funcs_ss = std::stringstream();
+      for(std::vector<std::string>::iterator it = allowed_funcs.begin(); it != allowed_funcs.end(); ++it) {
+        allowed_funcs_ss << *it << ", ";
+      }
+      ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " <<
+        allowed_funcs_ss.str().substr(0, allowed_funcs_ss.str().length()-2));
+    }
 
-    // Setup radiological nuclear mapper parameters
+    // Setup radiological nuclear mapper parameters  // TODO: Remove
 //    radiation_image_max_dist_ = distance(radiation_ang_res_y/2, radiation_ang_res_z/2);
 //  radiation_msg_step_ = 0;
 
@@ -76,9 +89,9 @@ namespace voxblox {
 
     // Subscribe nuclear intensity
     radiation_sensor_sub_ = nh_private_.subscribe(
-        radiation_sensor_topic, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
+        radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
 //  radiation_sensor_sub_ = nh_private_.subscribe(
-//      radiation_sensor_topic, 1, RadioNuclearMapperServer::radiationSensorCallback);
+//      radiation_sensor_topic_, 1, RadioNuclearMapperServer::radiationSensorCallback);
 
   }
 

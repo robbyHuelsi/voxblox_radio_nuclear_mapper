@@ -46,6 +46,7 @@ namespace voxblox {
       std::shared_ptr<ColorMap> color_map_;
 
       // radiological nuclear mapper
+      std::string radiation_sensor_topic_;
       std::string radiation_sensor_frame_id_;
       float radiation_msg_val_min_;
       float radiation_msg_val_max_;
@@ -54,6 +55,8 @@ namespace voxblox {
       int radiation_ang_res_z;
       float radiation_image_max_dist_;
       float radiation_image_dispersion_;  // TODO
+      std::string radiation_distance_function_;
+
       unsigned int radiation_msg_step_;
 
 //      float distance(int x, int y);  // TODO: Remove

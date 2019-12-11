@@ -28,13 +28,16 @@ class RadioNuclearMapperIntegrator {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
-                      Layer<IntensityVoxel>* intensity_layer);
+                               Layer<IntensityVoxel>* intensity_layer);
 
   /// Set the max distance for projecting into the TSDF layer.
   void setMaxDistance(const FloatingPoint max_distance) {
     max_distance_ = max_distance;
   }
   FloatingPoint getMaxDistance() const { return max_distance_; }
+
+
+  void setDistanceFunction(const std::string distance_function);
 
   /**
    * Integrates intensities into the intensity layer by projecting normalized
@@ -45,7 +48,7 @@ class RadioNuclearMapperIntegrator {
   void addIntensityBearingVectors(const Point& origin,
                                   const Pointcloud& bearing_vectors,
                                   //const std::vector<float>& intensities, // TODO: Remove
-                                  const float& intensity);
+                                  const float intensity);
 
  private:
   FloatingPoint max_distance_;
@@ -54,9 +57,30 @@ class RadioNuclearMapperIntegrator {
   float tmp_intensity;  // <== added
   /// Number of voxels to propagate from the surface along the bearing vector.
   int intensity_prop_voxel_radius_;
+  char dist_func_;
 
   const Layer<TsdfVoxel>& tsdf_layer_;
   Layer<IntensityVoxel>* intensity_layer_;
+
+  /**  // TODO
+   *
+   * @param dist_func
+   * @param in_intensity
+   * @param in_distance
+   * @param tmp_intensity
+   * @param tmp_weight
+   */
+  void calcTmpIntensityAndWeight(const float in_intensity, const float in_distance,
+                                 float& tmp_intensity, float& tmp_weight);
+
+  /**  // TODO
+   *
+   * @param voxel
+   * @param in_intensity
+   * @param in_weight
+   */
+  void updateIntensityAndWeight(IntensityVoxel& voxel,
+                                const float in_intensity, const float in_weight);
 };
 
 }  // namespace voxblox
