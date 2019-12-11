@@ -44,7 +44,8 @@ class RadioNuclearMapperIntegrator {
    */
   void addIntensityBearingVectors(const Point& origin,
                                   const Pointcloud& bearing_vectors,
-                                  const std::vector<float>& intensities);
+                                  //const std::vector<float>& intensities, // TODO: Remove
+                                  const float& intensity);
 
  private:
   FloatingPoint max_distance_;

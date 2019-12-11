@@ -12,11 +12,12 @@ RadioNuclearMapperIntegrator::RadioNuclearMapperIntegrator(const Layer<TsdfVoxel
 
 void RadioNuclearMapperIntegrator::addIntensityBearingVectors(
     const Point& origin, const Pointcloud& bearing_vectors,
-    const std::vector<float>& intensities) {
+    //const std::vector<float>& intensities  // TODO: Remove
+    const float& intensity) {
   timing::Timer intensity_timer("intensity/integrate");
 
-  CHECK_EQ(bearing_vectors.size(), intensities.size())
-      << "Intensity and bearing vector size does not match!";
+//  CHECK_EQ(bearing_vectors.size(), intensities.size())
+//      << "Intensity and bearing vector size does not match!";  // TODO: Remove
   const FloatingPoint voxel_size = tsdf_layer_.voxel_size();
 
   for (size_t i = 0; i < bearing_vectors.size(); ++i) {
@@ -53,7 +54,7 @@ void RadioNuclearMapperIntegrator::addIntensityBearingVectors(
 
     if (tmp_weight_ >= voxel.weight){
       voxel.weight = tmp_weight_;
-      tmp_intensity_ =  intensities[i] * distance * distance;
+      tmp_intensity_ =  intensity * distance * distance;
       printf("Intensity = %f // Weight = %f\n", tmp_intensity_, tmp_weight_);  // <== distance printer added
       if (tmp_intensity_ > voxel.intensity){
         voxel.intensity = tmp_intensity_;
