@@ -82,13 +82,13 @@ namespace voxblox {
 
   }
 
-  float RadioNuclearMapperServer::distance(int x, int y) {
-    return std::sqrt(x*x + y*y);
-  }
-
-  float RadioNuclearMapperServer::squared_distance(int x, int y) {
-    return x*x + y*y;
-  }
+//  float RadioNuclearMapperServer::distance(int x, int y) {  // TODO: Remove
+//    return std::sqrt(x*x + y*y);
+//  }
+//
+//  float RadioNuclearMapperServer::squared_distance(int x, int y) {
+//    return x*x + y*y;
+//  }
 
 
   void RadioNuclearMapperServer::updateMesh() {
@@ -146,7 +146,7 @@ namespace voxblox {
       //ROS_WARN_STREAM("Radiation sensor value is higher than maximum (" << radiation_msg_val_max_ << ")");
     }
 //  float intensity = (float)msg->value;
-    ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
+//    ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
 
     // Look up transform
     Transformation T_G_C;
@@ -159,7 +159,7 @@ namespace voxblox {
     Pointcloud bearing_vectors;
     bearing_vectors.reserve(radiation_ang_res_z * radiation_ang_res_y + 1);
 //    std::vector<float> intensities;
-//    intensities.reserve(radiation_ang_res_z * radiation_ang_res_y + 1);
+//    intensities.reserve(radiation_ang_res_z * radiation_ang_res_y + 1);  // TODO: Removw
 
     for (int i = 0; i < radiation_ang_res_z; i++) {
       float alpha = (float)i / (float)radiation_ang_res_z * 2.0 * M_PI;
@@ -169,27 +169,15 @@ namespace voxblox {
         //  |  sin(b)  cos(b)    0    | * |    0       1       0    | * | 0 | = | cos(a) * sin(b) |
         //  |    0       0       1    |   | -sin(a)    0     cos(a) |   | 0 |   |     -sin(a)     |
         Ray bearing_vector = Point(cos(alpha) * cos(beta), cos(alpha) * sin(beta), -sin(alpha));
-        ROS_INFO_STREAM("bearing_vector              = " << bearing_vector);
-//        Point v = T_G_C.getRotation().toImplementation() * p.normalized();
-
-//        ROS_INFO_STREAM("bearing_vector (normalized) = " << bearing_vector.normalized());
+//        ROS_INFO_STREAM("check: " << bearing_vector - bearing_vector.normalized()); // TODO: Remove
         bearing_vectors.push_back(bearing_vector); // .normalized()
-//          float sq_dist = squared_distance(row - radiation_ang_res_z / 2, col - radiation_ang_res_y / 2) / radiation_image_max_dist_; //TODO
-//          float sq_dist = distance(row - image_height_ / 2, col - image_width_ / 2) / max_dist_;
-//          float value = (1.0-radiation_image_dispersion_ *sq_dist) * intensity;
-//          float value = intensity;
-//          value = value < 0.0 ? 0.0 : (value > 1.0 ? 1.0 : value);
-//        intensities.push_back(intensity);
-
-        //ROS_INFO_STREAM("T_G_C.getRotation() = " << T_G_C.getRotation());
-        //ROS_INFO_STREAM("point.normalized() = " << Point(j - half_col, i - half_row, focal_length_px_).normalized());
       }
     }
     // Put this into the integrator.
     rnm_integrator_->addIntensityBearingVectors(
         T_G_C.getPosition(), bearing_vectors, intensity);
 
-//  radiation_msg_step_++;
+//  radiation_msg_step_++;  // TODO: Remove
 
   }
 }  // namespace voxblox

@@ -56,8 +56,8 @@ namespace voxblox {
       float radiation_image_dispersion_;  // TODO
       unsigned int radiation_msg_step_;
 
-      float distance(int x, int y);
-      float squared_distance(int x, int y);
+//      float distance(int x, int y);  // TODO: Remove
+//      float squared_distance(int x, int y);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
       //  void radiationSensorCallback(abc_msgs_fkie::MeasurementRawConstPtr msg);
 
