@@ -16,62 +16,50 @@
 // radiological nuclear mapper
 #include <abc_msgs_fkie/MeasurementRaw.h>
 
-
 namespace voxblox {
+  class RadioNuclearMapperServer : public IntensityServer {
+    public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-class RadioNuclearMapperServer : public IntensityServer {
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+      virtual ~RadioNuclearMapperServer() {}
 
-  RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  virtual ~RadioNuclearMapperServer() {}
+      virtual void updateMesh();
+      //  virtual void publishPointclouds();
 
-  virtual void updateMesh();
-//  virtual void publishPointclouds();
+      void intensityImageCallback(const sensor_msgs::ImageConstPtr& image);
 
-  void intensityImageCallback(const sensor_msgs::ImageConstPtr& image);
+    protected:
+      /// Subscriber for Radiation message.
+      ros::Subscriber radiation_sensor_sub_;
 
- protected:
-  /// Subscriber for intensity images.
-  ros::Subscriber intensity_image_sub_;
+      // Publish markers for visualization.
+      ros::Publisher intensity_pointcloud_pub_;
+      ros::Publisher intensity_mesh_pub_;
 
-  // Publish markers for visualization.
-  ros::Publisher intensity_pointcloud_pub_;
-  ros::Publisher intensity_mesh_pub_;
+      // Intensity layer, integrator, and color maps, all related to storing
+      // and visualizing intensity data.
+      std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
+      std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
 
-  /// Parameters of the incoming UNDISTORTED intensity images.
-  double focal_length_px_;
+      // Visualization tools.
+      std::shared_ptr<ColorMap> color_map_;
 
-  /** How much to subsample the image by (not proper downsampling, just
-   * subsampling).
-   */
-  int subsample_factor_;
+      // radiological nuclear mapper
+      std::string radiation_sensor_frame_id_;
+      float radiation_msg_val_min_;
+      float radiation_msg_val_max_;
+      bool radiation_msg_use_log_;
+      int radiation_ang_res_y;
+      int radiation_ang_res_z;
+      float radiation_image_max_dist_;
+      float radiation_image_dispersion_;  // TODO
+      unsigned int radiation_msg_step_;
 
-  // Intensity layer, integrator, and color maps, all related to storing
-  // and visualizing intensity data.
-  std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
-  std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
-
-  // Visualization tools.
-  std::shared_ptr<ColorMap> color_map_;
-
-    // radiological nuclear mapper
-    std::string radiation_sensor_frame_id_;
-    float radiation_msg_val_min_;
-    float radiation_msg_val_max_;
-    bool radiation_msg_use_log_;
-    int radiation_image_height_;
-    int radiation_image_width_;
-    float radiation_image_max_dist_;
-    float radiation_image_dispersion_;
-    unsigned int radiation_msg_step_;
-    ros::Subscriber radiation_sensor_sub_;
-    float distance(int x, int y);
-    float squared_distance(int x, int y);
-    void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
-//  void radiationSensorCallback(abc_msgs_fkie::MeasurementRawConstPtr msg);
-    std_msgs::Header intensity_test_image_header_;
-    ros::Publisher intensity_test_image_publisher_;
+      float distance(int x, int y);
+      float squared_distance(int x, int y);
+      void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
+      //  void radiationSensorCallback(abc_msgs_fkie::MeasurementRawConstPtr msg);
 
   };
 
