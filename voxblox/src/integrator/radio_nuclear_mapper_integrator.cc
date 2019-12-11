@@ -5,7 +5,7 @@ namespace voxblox {
 RadioNuclearMapperIntegrator::RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
                                          Layer<IntensityVoxel>* intensity_layer)
     : max_distance_(5.0),
-      max_weight_(100.0),
+//      max_weight_(100.0), // TODO: Remove
       intensity_prop_voxel_radius_(2),
       tsdf_layer_(tsdf_layer),
       intensity_layer_(intensity_layer) {}
@@ -46,36 +46,43 @@ void RadioNuclearMapperIntegrator::addIntensityBearingVectors(
 //      voxel.weight = max_weight_;
 //    }
 
-    if (voxel.weight < 1e-6){
-      tmp_weight_ = std::numeric_limits<float>::infinity();
+    // Using weight property of a voxel as a confidence value
+    // define a temporal weight as the inverse of the distance
+    if (distance < 1e-6){
+      tmp_weight = std::numeric_limits<float>::infinity();
     } else {
-      tmp_weight_ = 1 / distance;
+      tmp_weight = 1 / distance;
+    }
+    tmp_intensity =  intensity * distance * distance;
+
+    // If the temporal weight (or confidence) is higher than the stored one, update weight and check the intensity
+    if (tmp_weight >= voxel.weight){
+      voxel.weight = tmp_weight;
+//      printf("Intensity = %f // Weight = %f\n", tmp_intensity, tmp_weight);  // <== distance printer added
+//      if (tmp_intensity > voxel.intensity){
+        voxel.intensity = tmp_intensity;
+//      }
     }
 
-    if (tmp_weight_ >= voxel.weight){
-      voxel.weight = tmp_weight_;
-      tmp_intensity_ =  intensity * distance * distance;
-      printf("Intensity = %f // Weight = %f\n", tmp_intensity_, tmp_weight_);  // <== distance printer added
-      if (tmp_intensity_ > voxel.intensity){
-        voxel.intensity = tmp_intensity_;
+    // Now check the surrounding voxels along the bearing vector. If they have
+    // never been observed, then fill in their value. Otherwise don't.
+    Point close_voxel = surface_intersection;
+    for (int voxel_offset = -intensity_prop_voxel_radius_;
+         voxel_offset <= intensity_prop_voxel_radius_; voxel_offset++) {
+      close_voxel =
+          surface_intersection + bearing_vectors[i] * voxel_offset * voxel_size;  // TODO: Was passiert hier?
+      Block<IntensityVoxel>::Ptr new_block_ptr =
+          intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
+      IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
+      // If the temporal weight (or confidence) is higher than the stored one, update weight and check the intensity
+      if (tmp_weight >= new_voxel.weight){
+        new_voxel.weight = tmp_weight;
+//      printf("Intensity = %f // Weight = %f\n", tmp_intensity, tmp_weight);  // <== distance printer added
+//      if (tmp_intensity > voxel.intensity){
+        new_voxel.intensity = tmp_intensity;
+//      }
       }
     }
-
-//    // Now check the surrounding voxels along the bearing vector. If they have
-//    // never been observed, then fill in their value. Otherwise don't.
-//    Point close_voxel = surface_intersection;
-//    for (int voxel_offset = -intensity_prop_voxel_radius_;
-//         voxel_offset <= intensity_prop_voxel_radius_; voxel_offset++) {
-//      close_voxel =
-//          surface_intersection + bearing_vectors[i] * voxel_offset * voxel_size;
-//      Block<IntensityVoxel>::Ptr new_block_ptr =
-//          intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
-//      IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
-//      if (new_voxel.weight < 1e-6) {
-//        new_voxel.intensity = intensities[i];
-//        new_voxel.weight += 1.0;
-//      }
-//    }
   }
 }
 

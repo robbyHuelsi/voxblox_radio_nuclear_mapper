@@ -49,9 +49,9 @@ class RadioNuclearMapperIntegrator {
 
  private:
   FloatingPoint max_distance_;
-  float max_weight_;
-  float tmp_weight_;  // <= added
-  float tmp_intensity_;  // <== added
+//  float max_weight;  // TODO: Remove
+  float tmp_weight;  // <= added
+  float tmp_intensity;  // <== added
   /// Number of voxels to propagate from the surface along the bearing vector.
   int intensity_prop_voxel_radius_;
 
