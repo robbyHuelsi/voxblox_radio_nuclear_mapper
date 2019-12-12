@@ -36,6 +36,8 @@ class RadioNuclearMapperIntegrator {
   }
   FloatingPoint getMaxDistance() const { return max_distance_; }
 
+  std::vector<std::string> getAllowedDistanceFunctions() const {return allowed_distance_functions_;}
+
 
   void setDistanceFunction(const std::string distance_function);
 
@@ -50,18 +52,6 @@ class RadioNuclearMapperIntegrator {
                                   //const std::vector<float>& intensities, // TODO: Remove
                                   const float intensity);
 
- private:
-  FloatingPoint max_distance_;
-//  float max_weight;  // TODO: Remove
-  float tmp_weight;  // <= added
-  float tmp_intensity;  // <== added
-  /// Number of voxels to propagate from the surface along the bearing vector.
-  int intensity_prop_voxel_radius_;
-  char dist_func_;
-
-  const Layer<TsdfVoxel>& tsdf_layer_;
-  Layer<IntensityVoxel>* intensity_layer_;
-
   /**  // TODO
    *
    * @param dist_func
@@ -72,6 +62,20 @@ class RadioNuclearMapperIntegrator {
    */
   void calcTmpIntensityAndWeight(const float in_intensity, const float in_distance,
                                  float& tmp_intensity, float& tmp_weight);
+
+ private:
+  FloatingPoint max_distance_;
+//  float max_weight;  // TODO: Remove
+  float tmp_weight;  // <= added
+  float tmp_intensity;  // <== added
+  /// Number of voxels to propagate from the surface along the bearing vector.
+  int intensity_prop_voxel_radius_;
+
+  const Layer<TsdfVoxel>& tsdf_layer_;
+  Layer<IntensityVoxel>* intensity_layer_;
+
+  std::vector<std::string> allowed_distance_functions_;
+  char dist_func_;
 
   /**  // TODO
    *

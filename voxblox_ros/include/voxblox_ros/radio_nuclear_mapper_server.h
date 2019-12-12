@@ -24,6 +24,8 @@ namespace voxblox {
       RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
       virtual ~RadioNuclearMapperServer() {}
 
+      void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
+
       virtual void updateMesh();
       //  virtual void publishPointclouds();
 
@@ -33,29 +35,28 @@ namespace voxblox {
       /// Subscriber for Radiation message.
       ros::Subscriber radiation_sensor_sub_;
 
-      // Publish markers for visualization.
+      /// Publish markers for visualization.
       ros::Publisher intensity_pointcloud_pub_;
       ros::Publisher intensity_mesh_pub_;
 
-      // Intensity layer, integrator, and color maps, all related to storing
-      // and visualizing intensity data.
+      /// Intensity layer, integrator, and color maps, all related to storing
+      /// and visualizing intensity data.
       std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
       std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
 
-      // Visualization tools.
+      /// Visualization tools
       std::shared_ptr<ColorMap> color_map_;
 
-      // radiological nuclear mapper
+      /// Parameters for radiological nuclear mapper
       std::string radiation_sensor_topic_;
       std::string radiation_sensor_frame_id_;
+      float radiation_max_distance_;
+      std::string radiation_distance_function_;
       float radiation_msg_val_min_;
       float radiation_msg_val_max_;
       bool radiation_msg_use_log_;
-      int radiation_ang_res_y;
-      int radiation_ang_res_z;
-      float radiation_image_max_dist_;
-      float radiation_image_dispersion_;  // TODO
-      std::string radiation_distance_function_;
+      int radiation_ang_res_y_;
+      int radiation_ang_res_z_;
 
       unsigned int radiation_msg_step_;
 

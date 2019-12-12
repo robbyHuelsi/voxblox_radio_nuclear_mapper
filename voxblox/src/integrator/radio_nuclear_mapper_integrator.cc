@@ -7,6 +7,7 @@ namespace voxblox {
         intensity_prop_voxel_radius_(2),
         tsdf_layer_(tsdf_layer),
         intensity_layer_(intensity_layer),
+        allowed_distance_functions_({"increasing", "decreasing", "constant"}),
         dist_func_('z'){}
 
   void RadioNuclearMapperIntegrator::setDistanceFunction(const std::string distance_function) {
@@ -49,6 +50,7 @@ namespace voxblox {
 
       // Get temporal intensity and weight to check if an update is necessary and perform it if necessary
       calcTmpIntensityAndWeight(intensity, distance, tmp_intensity, tmp_weight);
+      printf("Intensity = %f // Weight = %f\n", tmp_intensity, tmp_weight);
 
       // Update intensity and weight if needed
       updateIntensityAndWeight(voxel, tmp_intensity, tmp_weight);
@@ -89,8 +91,6 @@ namespace voxblox {
     } else {  // zero
       tmp_intensity =  0.0;
     }
-
-    printf("Intensity = %f // Weight = %f\n", tmp_intensity, tmp_weight);
   }
 
   void RadioNuclearMapperIntegrator::updateIntensityAndWeight(voxblox::IntensityVoxel& voxel,
