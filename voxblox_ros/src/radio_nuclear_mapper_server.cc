@@ -3,190 +3,177 @@
 namespace voxblox {
 
   RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private):
-  IntensityServer(nh, nh_private), focal_length_px_(400.0f), subsample_factor_(12) {
+  IntensityServer(nh, nh_private) {
 
     cache_mesh_ = true;
 
     intensity_layer_.reset(new Layer<IntensityVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
-                                                        tsdf_map_->getTsdfLayer().voxels_per_side()));
-    intensity_integrator_.reset(new IntensityIntegrator(tsdf_map_->getTsdfLayer(),
+                                                     tsdf_map_->getTsdfLayer().voxels_per_side()));
+    rnm_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
                                                            intensity_layer_.get()));
 
-    // Get ROS params:
-    nh_private_.param("intensity_focal_length", focal_length_px_, focal_length_px_);
-    nh_private_.param("subsample_factor", subsample_factor_, subsample_factor_);
+    /// Get ROS params for radiation sensor
+    getServerConfigFromRosParam(nh_private_);
 
-    float intensity_min_value = 10.0f;
-    float intensity_max_value = 40.0f;
-    nh_private_.param("intensity_min_value", intensity_min_value, intensity_min_value);
-    nh_private_.param("intensity_max_value", intensity_max_value, intensity_max_value);
+    /// Forward some paramters to integrator
+    rnm_integrator_->setMaxDistance(radiation_max_distance_);
+    rnm_integrator_->setDistanceFunction(radiation_distance_function_);
 
-    FloatingPoint intensity_max_distance = intensity_integrator_->getMaxDistance();
-    nh_private_.param("intensity_max_distance", intensity_max_distance, intensity_max_distance);
-    intensity_integrator_->setMaxDistance(intensity_max_distance);
+    /// Set minumum and maximum value of colormap
+    std::vector<float> intensity_extreme_values;
+    float radiation_msg_extreme_values[] = {radiation_msg_val_min_, radiation_msg_val_max_};
+    float distance_extreme_values[] = {0.0, radiation_max_distance_};
+    float tmp_intensity, tmp_weight;
+    for(float msg: radiation_msg_extreme_values){
+      for(float dist: distance_extreme_values){
+        rnm_integrator_->calcTmpIntensityAndWeight(msg, dist, tmp_intensity, tmp_weight);
+        intensity_extreme_values.insert(intensity_extreme_values.end(), 1, tmp_intensity);
+      }
+    }
+    float intensity_min_value = *std::min_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
+    float intensity_max_value = *std::max_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
+    color_map_->setMinValue(intensity_min_value);
+    color_map_->setMaxValue(intensity_max_value);
+    ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
 
-    // Get ROS params for radiological nuclear mapper
-    std::string radiation_sensor_topic;
-    nh_private_.param<std::string>("radiation_sensor_topic", radiation_sensor_topic, "");
-    nh_private_.param<std::string>("radiation_sensor_frame_id", radiation_sensor_frame_id_, "");
-    nh_private_.param("radiation_msg_val_min", radiation_msg_val_min_, 0.0f);
-    nh_private_.param("radiation_msg_val_max", radiation_msg_val_max_, 100000.0f);
-    nh_private_.param("radiation_msg_use_log", radiation_msg_use_log_, false);
-    nh_private_.param("radiation_image_image_width", radiation_image_width_, 100);
-    nh_private_.param("radiation_image_image_height", radiation_image_height_, 100);
-    nh_private_.param("radiation_image_dispersion", radiation_image_dispersion_, 1.0f);
+    // Publishers for output.
+    radiation_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
+            "radiation_pointcloud", 1, true);
+    radiation_mesh_pub_ =
+        nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
-    ROS_INFO_STREAM("Radiation sensor data topic: " << radiation_sensor_topic);
-    ROS_INFO_STREAM("Radiation sensor frame id: " << radiation_sensor_frame_id_);
-    ROS_INFO_STREAM("Radiation sensor value range (no log): [" << radiation_msg_val_min_ << ", " <<
-                                                               radiation_msg_val_max_ << "]");
+    // Subscribe nuclear intensity
+    radiation_sensor_sub_ = nh_private_.subscribe(
+        radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
+  }
+
+  void RadioNuclearMapperServer::getServerConfigFromRosParam(
+      const ros::NodeHandle& nh_private) {
+    /// Define pre-sets of parameters
+    radiation_sensor_topic_ = "";
+    radiation_sensor_frame_id_ = "";
+    radiation_max_distance_ = rnm_integrator_->getMaxDistance();
+    radiation_distance_function_ = "constant";
+    radiation_msg_val_min_ = 0.0;
+    radiation_msg_val_max_ = 100000.0;
+    radiation_msg_use_log_ = false;
+    radiation_ang_res_y_ = 100;
+    radiation_ang_res_z_ = 100;
+    std::string color_map_scheme = "ironbow";
+
+    /// Get ROS parameters
+    nh_private.param<std::string>("radiation_sensor_topic", radiation_sensor_topic_, radiation_sensor_topic_);
+    nh_private.param<std::string>("radiation_sensor_frame_id", radiation_sensor_frame_id_, radiation_sensor_frame_id_);
+    nh_private.param("radiation_max_distance", radiation_max_distance_, radiation_max_distance_);
+    nh_private.param<std::string>("radiation_distance_function", radiation_distance_function_, radiation_distance_function_);
+    nh_private.param("radiation_msg_val_min", radiation_msg_val_min_, radiation_msg_val_min_);
+    nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
+    nh_private.param("radiation_msg_use_log", radiation_msg_use_log_, radiation_msg_use_log_);
+    nh_private.param("radiation_ang_res_y_", radiation_ang_res_y_, radiation_ang_res_y_);
+    nh_private.param("radiation_ang_res_z_", radiation_ang_res_z_, radiation_ang_res_z_);
+    nh_private.param("radiation_colormap", color_map_scheme, color_map_scheme);
+
+    /// Check parameter validity for sensor topic parameter and print it
+    if(radiation_sensor_topic_.empty()){
+      ROS_ERROR("ROS topic for radiological nuclear sensor data not specified.");
+      ROS_INFO("Use parameter 'radiation_sensor_topic' to define.");
+    }else {
+      ROS_INFO_STREAM("Radiation sensor data topic: " << radiation_sensor_topic_);
+    }
+
+    /// Check parameter validity for sensor frame parameter and print it
+    if (radiation_sensor_frame_id_.empty()) {
+      ROS_ERROR("Frame id of radiological nuclear sensor not specified.");
+      ROS_INFO("Use parameter 'radiation_sensor_frame_id' next time.");
+    }else{
+      ROS_INFO_STREAM("Radiation sensor frame id: " << radiation_sensor_frame_id_);
+    }
+
+    /// Check parameter validity for distance parameters and print it
+    std::vector<std::string> allowed_funcs = rnm_integrator_->getAllowedDistanceFunctions();
+    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), radiation_distance_function_) == allowed_funcs.end()){
+      // Distance function string is not allowed
+      ROS_ERROR("Radiation distance function is called by a not supported string.");
+      std::stringstream allowed_funcs_ss = std::stringstream();
+      for(std::vector<std::string>::iterator it = allowed_funcs.begin(); it != allowed_funcs.end(); ++it) {
+        allowed_funcs_ss << *it << ", ";
+      }
+      ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " <<
+                                                                                              allowed_funcs_ss.str().substr(0, allowed_funcs_ss.str().length()-2));
+    }else{
+      ROS_INFO_STREAM("Radiation will map in a radius of " << radiation_max_distance_ <<
+                                                           " meters with the distance function '" << radiation_distance_function_ << "'.");
+    }
+
+    /// Print message value parameters and make it logarithmic if needed
+    ROS_INFO_STREAM("Radiation sensor value range (w/o logarithm): [" << radiation_msg_val_min_ << ", " <<
+                                                                      radiation_msg_val_max_ << "]");
     if(radiation_msg_use_log_){
       radiation_msg_val_min_ = log(radiation_msg_val_min_);
       radiation_msg_val_min_ = radiation_msg_val_min_ < 0.0 ? 0.0 : radiation_msg_val_min_;
       radiation_msg_val_max_ = log(radiation_msg_val_max_);
-      ROS_INFO_STREAM("Radiation sensor value range (log): [" << radiation_msg_val_min_ << ", " <<
-                                                              radiation_msg_val_max_ << "]");
-    }
-    ROS_INFO_STREAM("Radiation image size: " << radiation_image_width_ << "*" << radiation_image_height_);
-
-    // Check parameter validity
-    if (radiation_sensor_topic.empty()) {
-      ROS_ERROR("ROS topic for radiological nuclear sensor data not specified.");
-      ROS_INFO("Use parameter 'radiation_sensor_topic' next time.");
-//    ros::shutdown();
-//    return EXIT_FAILURE;
-    } else if (radiation_sensor_frame_id_.empty()) {
-      ROS_ERROR("Frame id of radiological nuclear sensor not specified.");
-      ROS_INFO("Use parameter 'radiation_sensor_frame_id' next time.");
-//    ros::shutdown();
-//    return EXIT_FAILURE;
+      ROS_INFO_STREAM("Radiation sensor value range (with logarithm): [" << radiation_msg_val_min_ << ", " <<
+                                                                         radiation_msg_val_max_ << "]");
     }
 
-    // Setup radiological nuclear mapper parameters
-    radiation_image_max_dist_ = distance(radiation_image_width_/2, radiation_image_height_/2);
-    intensity_test_image_header_.frame_id = radiation_sensor_frame_id_;
-//  radiation_msg_step_ = 0;
+    /// Print resolution parameters
+    ROS_INFO_STREAM("Radiation angular resolution: (y=" << radiation_ang_res_y_ << "; z=" << radiation_ang_res_z_ << ")");
 
-    // Publishers for output.
-    intensity_pointcloud_pub_ =
-        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-            "intensity_pointcloud", 1, true);
-    intensity_mesh_pub_ =
-        nh_private_.advertise<voxblox_msgs::Mesh>("intensity_mesh", 1, true);
-
-    color_map_.reset(new IronbowColorMap());
-    color_map_->setMinValue(intensity_min_value);
-    color_map_->setMaxValue(intensity_max_value);
-
-//  // Set up subscriber.
-//  intensity_image_sub_ = nh_private_.subscribe(
-//      "intensity_image", 1, &RadioNuclearMapperServer::intensityImageCallback, this);
-
-
-    intensity_test_image_publisher_ = nh_private_.advertise<sensor_msgs::Image>("intensity_test_image", 1);
-
-    // Subscribe nuclear intensity
-    radiation_sensor_sub_ = nh_private_.subscribe(
-        radiation_sensor_topic, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
-//  radiation_sensor_sub_ = nh_private_.subscribe(
-//      radiation_sensor_topic, 1, RadioNuclearMapperServer::radiationSensorCallback);
-
+    /// Set color map by given color scheme
+    bool color_map_scheme_valid = false;
+    if (color_map_scheme == "rainbow") {
+      color_map_.reset(new RainbowColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme == "inverse_rainbow") {
+      color_map_.reset(new InverseRainbowColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme == "grayscale") {
+      color_map_.reset(new GrayscaleColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme == "inverse_grayscale") {
+      color_map_.reset(new InverseGrayscaleColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme == "ironbow") {
+      color_map_.reset(new IronbowColorMap());
+      color_map_scheme_valid = true;
+    }
+    if (color_map_scheme_valid) {
+      ROS_INFO_STREAM("Color scheme for color map: " << color_map_scheme);
+    } else {
+      ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme);
+      ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
+                      "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow");
+    }
   }
-
-  float RadioNuclearMapperServer::distance(int x, int y) {
-    return std::sqrt(x*x + y*y);
-  }
-
-  float RadioNuclearMapperServer::squared_distance(int x, int y) {
-    return x*x + y*y;
-  }
-
 
   void RadioNuclearMapperServer::updateMesh() {
     TsdfServer::updateMesh();
 
     // Now recolor the mesh...
-    timing::Timer publish_mesh_timer("intensity_mesh/publish");
+    timing::Timer publish_mesh_timer("radiation_mesh/publish");
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
                                      &cached_mesh_msg_);
-    intensity_mesh_pub_.publish(cached_mesh_msg_);
+    radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
   }
 
-//  void RadioNuclearMapperServer::publishPointclouds() {
-//    // Create a pointcloud with temperature = intensity.
-//    pcl::PointCloud<pcl::PointXYZI> pointcloud;
-//
-//    createIntensityPointcloudFromIntensityLayer(*intensity_layer_, &pointcloud);
-//
-//    pointcloud.header.frame_id = world_frame_;
-//    intensity_pointcloud_pub_.publish(pointcloud);
-//
-//    TsdfServer::publishPointclouds();
-//  }
+  void RadioNuclearMapperServer::publishPointclouds() {
+    // Create a pointcloud with radiation = intensity.
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-  void RadioNuclearMapperServer::intensityImageCallback(
-      const sensor_msgs::ImageConstPtr& image) {
-    CHECK(intensity_layer_);
-    CHECK(intensity_integrator_);
-    CHECK(image);
-    // Look up transform first...
-    Transformation T_G_C;
-    if (!transformer_.lookupTransform(image->header.frame_id, world_frame_,
-                                      image->header.stamp, &T_G_C)) {
-      ROS_WARN_THROTTLE(10, "Failed to look up intensity transform!");
-      return;
-    }
+    createIntensityPointcloudFromIntensityLayer(*intensity_layer_, &pointcloud);
 
-    cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image);
+    pointcloud.header.frame_id = world_frame_;
+    radiation_pointcloud_pub_.publish(pointcloud);
 
-    CHECK(cv_ptr);
-
-    const size_t num_pixels =
-        cv_ptr->image.rows * cv_ptr->image.cols / subsample_factor_;
-
-    float half_row = cv_ptr->image.rows / 2.0;
-    float half_col = cv_ptr->image.cols / 2.0;
-
-    // Pre-allocate the bearing vectors and intensities.
-    Pointcloud bearing_vectors;
-    bearing_vectors.reserve(num_pixels + 1);
-    std::vector<float> intensities;
-    intensities.reserve(num_pixels + 1);
-
-    size_t k = 0;
-    size_t m = 0;
-    for (int i = 0; i < cv_ptr->image.rows; i++) {
-      const float* image_row = cv_ptr->image.ptr<float>(i);
-      for (int j = 0; j < cv_ptr->image.cols; j++) {
-        if (m % subsample_factor_ == 0) {
-          // Rotates the vector pointing from the camera center to the pixel
-          // into the global frame, and normalizes it.
-          bearing_vectors.push_back(
-              T_G_C.getRotation().toImplementation() *
-              Point(j - half_col, i - half_row, focal_length_px_).normalized());
-          intensities.push_back(image_row[j]);
-          k++;
-        }
-        m++;
-      }
-    }
-
-    // Put this into the integrator.
-    intensity_integrator_->addIntensityBearingVectors(
-        T_G_C.getPosition(), bearing_vectors, intensities);
+    TsdfServer::publishPointclouds();
   }
 
-  void RadioNuclearMapperServer::radiationSensorCallback(
-//    abc_msgs_fkie::MeasurementRawConstPtr msg) {
-      const abc_msgs_fkie::MeasurementRawConstPtr& msg) {
+  void RadioNuclearMapperServer::radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg) {
     CHECK(intensity_layer_);
-    CHECK(intensity_integrator_);
+    CHECK(rnm_integrator_);
     CHECK(msg);
-    //ROS_INFO_STREAM("Msg value: " << msg->value);
-    // Simulate nuclear intensity
-//  float intensity = 0.5;
-//  float intensity = sin((float)msg->header.seq*3.1415/10.0) / 2;
 
     //Get intensity from radiation sensor subscriber message
     float intensity = (float)msg->value;
@@ -199,6 +186,7 @@ namespace voxblox {
     // Normalize between 0.0 and 1.0
     intensity = radiation_msg_val_min_ + intensity / (radiation_msg_val_max_ - radiation_msg_val_min_);
 
+    // TODO: Braucht man das noch?
     if (intensity < 0.0) {
       intensity = 0.0;
       //ROS_WARN_STREAM("Radiation sensor value is smaller than minimum (" << radiation_msg_val_min_ << ")");
@@ -208,7 +196,7 @@ namespace voxblox {
       //ROS_WARN_STREAM("Radiation sensor value is higher than maximum (" << radiation_msg_val_max_ << ")");
     }
 //  float intensity = (float)msg->value;
-    ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
+//    ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
 
     // Look up transform
     Transformation T_G_C;
@@ -217,69 +205,25 @@ namespace voxblox {
       return;
     }
 
-    // Initialize image with no intensity
-    cv::Mat float_img = cv::Mat(radiation_image_height_, radiation_image_width_, CV_32FC1, cv::Scalar::all(0));
-    cv::Mat uint_img = cv::Mat(radiation_image_height_, radiation_image_width_, CV_8UC1, cv::Scalar::all(0));
-
-    // Create intensity image
-    for (int row = 0; row < float_img.rows; ++row) {
-      for (int col = 0; col < float_img.cols; ++col) {
-        //float sq_dist = squared_distance(row - radiation_image_height_ / 2, col - radiation_image_width_ / 2) / radiation_image_max_dist_; //TODO
-        //float sq_dist = distance(row - image_height_ / 2, col - image_width_ / 2) / max_dist_;
-        //float value = (1.0-radiation_image_dispersion_ *sq_dist) * intensity;
-        float value = intensity;
-        value = value < 0.0 ? 0.0 : (value > 1.0 ? 1.0 : value);
-        float_img.at<float>(row, col, 0) = value;
-        uint_img.at<unsigned int>(row, col, 0) = (unsigned int)round(value * 255.0);
-      }
-    }
-
-    const size_t num_pixels = radiation_image_height_ * radiation_image_width_ / subsample_factor_;
-
-    float half_row = radiation_image_height_ / 2.0;
-    float half_col = radiation_image_width_ / 2.0;
-
     // Pre-allocate the bearing vectors and intensities.
     Pointcloud bearing_vectors;
-    bearing_vectors.reserve(num_pixels + 1);
-    std::vector<float> intensities;
-    intensities.reserve(num_pixels + 1);
+    bearing_vectors.reserve(radiation_ang_res_z_ * radiation_ang_res_y_ + 1);
 
-////        ROS_INFO_STREAM("img dtype: " << img.type());
-////        ROS_INFO_STREAM("img middle val: " << img.at<uchar>((int)image_height_/2, (int)image_width_/2));
+    for (int i = 0; i < radiation_ang_res_y_; i++) {
+      float beta = (float)i / (float)radiation_ang_res_y_ * 2.0 * M_PI;
+      for (int j = 0; j < radiation_ang_res_z_; j++) {
+        float gamma = (float)j / (float)radiation_ang_res_z_ * 2.0 * M_PI;
 
-    // Define header and send intensity image to voxblox
-////    header_.seq = step_;
-////    header_.stamp = ros::Time::now();
-    intensity_test_image_header_.seq = msg->header.seq;
-    intensity_test_image_header_.stamp = msg->header.stamp;
-    intensity_test_image_publisher_.publish(cv_bridge::CvImage(intensity_test_image_header_, "mono8", uint_img).toImageMsg());
+        //  |  cos(c) -sin(c)    0    |   |  cos(b)    0     sin(b) |   | 1 |   | cos(b) * cos(c) |
+        //  |  sin(c)  cos(c)    0    | * |    0       1       0    | * | 0 | = | cos(b) * sin(c) |
+        //  |    0       0       1    |   | -sin(b)    0     cos(b) |   | 0 |   |     -sin(b)     |
 
-    size_t k = 0;
-    size_t m = 0;
-    for (int i = 0; i < float_img.rows; i++) {
-      const float* image_row = float_img.ptr<float>(i);
-      for (int j = 0; j < float_img.cols; j++) {
-        if (m % subsample_factor_ == 0) {
-          // Rotates the vector pointing from the camera center to the pixel
-          // into the global frame, and normalizes it.
-          bearing_vectors.push_back(
-              T_G_C.getRotation().toImplementation() *
-              Point(j - half_col, i - half_row, focal_length_px_).normalized());
-          intensities.push_back(image_row[j]);
-          k++;
-        }
-        m++;
+        Ray bearing_vector = Point(cos(beta) * cos(gamma), cos(beta) * sin(gamma), -sin(beta));
+        bearing_vectors.push_back(bearing_vector); // .normalized()
       }
     }
-
     // Put this into the integrator.
-    intensity_integrator_->addIntensityBearingVectors(
-        T_G_C.getPosition(), bearing_vectors, intensities);
-
-//  radiation_msg_step_++;
-
+    rnm_integrator_->addIntensityBearingVectors(
+        T_G_C.getPosition(), bearing_vectors, intensity);
   }
-
-
 }  // namespace voxblox

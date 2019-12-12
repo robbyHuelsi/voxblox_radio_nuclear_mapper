@@ -40,6 +40,7 @@ set("${PROJECT_NAME}_SRCS"
   src/integrator/esdf_occ_integrator.cc
   src/integrator/integrator_utils.cc
   src/integrator/intensity_integrator.cc
+  src/integrator/radio_nuclear_mapper_integrator.cc
   src/integrator/tsdf_integrator.cc
   src/io/mesh_ply.cc
   src/io/sdf_ply.cc
