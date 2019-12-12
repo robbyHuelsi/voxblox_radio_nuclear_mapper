@@ -17,6 +17,7 @@
 #include <abc_msgs_fkie/MeasurementRaw.h>
 
 namespace voxblox {
+
   class RadioNuclearMapperServer : public IntensityServer {
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -24,28 +25,14 @@ namespace voxblox {
       RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
       virtual ~RadioNuclearMapperServer() {}
 
-      void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
-
       virtual void updateMesh();
-      //  virtual void publishPointclouds();
-
-      void intensityImageCallback(const sensor_msgs::ImageConstPtr& image);
+      virtual void publishPointclouds();
 
     protected:
-      /// Subscriber for Radiation message.
-      ros::Subscriber radiation_sensor_sub_;
-
-      /// Publish markers for visualization.
-      ros::Publisher intensity_pointcloud_pub_;
-      ros::Publisher intensity_mesh_pub_;
-
       /// Intensity layer, integrator, and color maps, all related to storing
       /// and visualizing intensity data.
       std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
       std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
-
-      /// Visualization tools
-      std::shared_ptr<ColorMap> color_map_;
 
       /// Parameters for radiological nuclear mapper
       std::string radiation_sensor_topic_;
@@ -58,13 +45,18 @@ namespace voxblox {
       int radiation_ang_res_y_;
       int radiation_ang_res_z_;
 
-      unsigned int radiation_msg_step_;
+      /// Visualization tools
+      std::shared_ptr<ColorMap> color_map_;
 
-//      float distance(int x, int y);  // TODO: Remove
-//      float squared_distance(int x, int y);
+      /// Publish markers for visualization.
+      ros::Publisher radiation_pointcloud_pub_;
+      ros::Publisher radiation_mesh_pub_;
+
+      /// Subscriber for Radiation message.
+      ros::Subscriber radiation_sensor_sub_;
+
+      void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
-      //  void radiationSensorCallback(abc_msgs_fkie::MeasurementRawConstPtr msg);
-
   };
 
 }  // namespace voxblox

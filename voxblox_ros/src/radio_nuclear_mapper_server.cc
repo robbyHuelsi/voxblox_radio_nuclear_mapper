@@ -37,11 +37,11 @@ namespace voxblox {
     ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
 
     // Publishers for output.
-    intensity_pointcloud_pub_ =
+    radiation_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
-            "intensity_pointcloud", 1, true);
-    intensity_mesh_pub_ =
-        nh_private_.advertise<voxblox_msgs::Mesh>("intensity_mesh", 1, true);
+            "radiation_pointcloud", 1, true);
+    radiation_mesh_pub_ =
+        nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
     // Subscribe nuclear intensity
     radiation_sensor_sub_ = nh_private_.subscribe(
@@ -151,35 +151,29 @@ namespace voxblox {
     TsdfServer::updateMesh();
 
     // Now recolor the mesh...
-    timing::Timer publish_mesh_timer("intensity_mesh/publish");
+    timing::Timer publish_mesh_timer("radiation_mesh/publish");
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
                                      &cached_mesh_msg_);
-    intensity_mesh_pub_.publish(cached_mesh_msg_);
+    radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
   }
 
-//  void RadioNuclearMapperServer::publishPointclouds() {
-//    // Create a pointcloud with temperature = intensity.
-//    pcl::PointCloud<pcl::PointXYZI> pointcloud;
-//
-//    createIntensityPointcloudFromIntensityLayer(*intensity_layer_, &pointcloud);
-//
-//    pointcloud.header.frame_id = world_frame_;
-//    intensity_pointcloud_pub_.publish(pointcloud);
-//
-//    TsdfServer::publishPointclouds();
-//  }
+  void RadioNuclearMapperServer::publishPointclouds() {
+    // Create a pointcloud with radiation = intensity.
+    pcl::PointCloud<pcl::PointXYZI> pointcloud;
+
+    createIntensityPointcloudFromIntensityLayer(*intensity_layer_, &pointcloud);
+
+    pointcloud.header.frame_id = world_frame_;
+    radiation_pointcloud_pub_.publish(pointcloud);
+
+    TsdfServer::publishPointclouds();
+  }
 
   void RadioNuclearMapperServer::radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg) {
     CHECK(intensity_layer_);
     CHECK(rnm_integrator_);
     CHECK(msg);
-
-    // TODO: Remove
-    //ROS_INFO_STREAM("Msg value: " << msg->value);
-    // Simulate nuclear intensity
-//  float intensity = 0.5;
-//  float intensity = sin((float)msg->header.seq*3.1415/10.0) / 2;
 
     //Get intensity from radiation sensor subscriber message
     float intensity = (float)msg->value;
@@ -225,15 +219,11 @@ namespace voxblox {
         //  |    0       0       1    |   | -sin(b)    0     cos(b) |   | 0 |   |     -sin(b)     |
 
         Ray bearing_vector = Point(cos(beta) * cos(gamma), cos(beta) * sin(gamma), -sin(beta));
-//        ROS_INFO_STREAM("check: " << bearing_vector - bearing_vector.normalized()); // TODO: Remove
         bearing_vectors.push_back(bearing_vector); // .normalized()
       }
     }
     // Put this into the integrator.
     rnm_integrator_->addIntensityBearingVectors(
         T_G_C.getPosition(), bearing_vectors, intensity);
-
-//  radiation_msg_step_++;  // TODO: Remove
-
   }
 }  // namespace voxblox
