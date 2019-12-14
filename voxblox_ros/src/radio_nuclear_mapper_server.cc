@@ -16,6 +16,9 @@ namespace voxblox {
     getServerConfigFromRosParam(nh_private_);
 
     /// Forward some paramters to integrator
+    rnm_integrator_->setUseLogarithm(radiation_msg_use_log_);
+//    rnm_integrator_->setRadiationSensorMinValue(radiation_msg_val_min_);  // TODO: Remove
+//    rnm_integrator_->setRadiationSensorMaxValue(radiation_msg_val_max_);  // TODO: Remove
     rnm_integrator_->setMaxDistance(radiation_max_distance_);
     rnm_integrator_->setDistanceFunction(radiation_distance_function_);
 
@@ -26,7 +29,7 @@ namespace voxblox {
     float tmp_intensity, tmp_weight;
     for(float msg: radiation_msg_extreme_values){
       for(float dist: distance_extreme_values){
-        rnm_integrator_->calcTmpIntensityAndWeight(msg, dist, tmp_intensity, tmp_weight);
+        rnm_integrator_->calcIntensityAndConfidence(msg, dist, tmp_intensity, tmp_weight);
         intensity_extreme_values.insert(intensity_extreme_values.end(), 1, tmp_intensity);
       }
     }
@@ -110,11 +113,9 @@ namespace voxblox {
     ROS_INFO_STREAM("Radiation sensor value range (w/o logarithm): [" << radiation_msg_val_min_ << ", " <<
                                                                       radiation_msg_val_max_ << "]");
     if(radiation_msg_use_log_){
-      radiation_msg_val_min_ = log(radiation_msg_val_min_);
-      radiation_msg_val_min_ = radiation_msg_val_min_ < 0.0 ? 0.0 : radiation_msg_val_min_;
-      radiation_msg_val_max_ = log(radiation_msg_val_max_);
-      ROS_INFO_STREAM("Radiation sensor value range (with logarithm): [" << radiation_msg_val_min_ << ", " <<
-                                                                         radiation_msg_val_max_ << "]");
+      ROS_INFO_STREAM("Radiation sensor value range (with logarithm): [" <<
+                      (log(radiation_msg_val_min_) < 0.0 ? 0.0 : log(radiation_msg_val_min_)) << ", " <<
+                      log(radiation_msg_val_max_) << "]");
     }
 
     /// Print resolution parameters
@@ -175,28 +176,16 @@ namespace voxblox {
     CHECK(rnm_integrator_);
     CHECK(msg);
 
-    //Get intensity from radiation sensor subscriber message
-    float intensity = (float)msg->value;
-
-    // Use logarithmic mapping if needed
-    if(radiation_msg_use_log_){
-      intensity = log(intensity);
+    // Get value from radiation sensor subscriber message
+    float radiation_sensor_value = (float)msg->value;
+    if (radiation_sensor_value < radiation_msg_val_min_) {
+      ROS_WARN_STREAM("Radiation sensor value is smaller than minimum: " <<
+                      radiation_sensor_value << " <" << radiation_msg_val_min_ << ")");
     }
-
-    // Normalize between 0.0 and 1.0
-    intensity = radiation_msg_val_min_ + intensity / (radiation_msg_val_max_ - radiation_msg_val_min_);
-
-    // TODO: Braucht man das noch?
-    if (intensity < 0.0) {
-      intensity = 0.0;
-      //ROS_WARN_STREAM("Radiation sensor value is smaller than minimum (" << radiation_msg_val_min_ << ")");
+    if (radiation_sensor_value > radiation_msg_val_max_) {
+      ROS_WARN_STREAM("Radiation sensor value is higher than maximum:" <<
+                      radiation_sensor_value << ">" << radiation_msg_val_max_ << ")");
     }
-    if (intensity > 1.0) {
-      intensity = 1.0;
-      //ROS_WARN_STREAM("Radiation sensor value is higher than maximum (" << radiation_msg_val_max_ << ")");
-    }
-//  float intensity = (float)msg->value;
-//    ROS_INFO_STREAM("Intensity (" << (radiation_msg_use_log_?"log":"no log") << "): " << intensity);
 
     // Look up transform
     Transformation T_G_C;
@@ -223,7 +212,7 @@ namespace voxblox {
       }
     }
     // Put this into the integrator.
-    rnm_integrator_->addIntensityBearingVectors(
-        T_G_C.getPosition(), bearing_vectors, intensity);
+    rnm_integrator_->addRadiationSensorValueBearingVectors(
+        T_G_C.getPosition(), bearing_vectors, radiation_sensor_value);
   }
 }  // namespace voxblox

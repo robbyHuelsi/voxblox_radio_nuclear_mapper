@@ -30,6 +30,17 @@ class RadioNuclearMapperIntegrator {
   RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
                                Layer<IntensityVoxel>* intensity_layer);
 
+//  void setRadiationSensorMinValue(const float min_val) {  // TODO:Remove
+//    radiation_sensor_min_ = min_val;
+//  }
+//  void setRadiationSensorMaxValue(const float max_val) {
+//    radiation_sensor_max_ = max_val;
+//  }
+
+  void setUseLogarithm(const bool use_logarithm) {
+    use_logarithm_ = use_logarithm;
+  }
+
   /// Set the max distance for projecting into the TSDF layer.
   void setMaxDistance(const FloatingPoint max_distance) {
     max_distance_ = max_distance;
@@ -47,27 +58,28 @@ class RadioNuclearMapperIntegrator {
    * the world coordinate frame) into the TSDF layer, and then setting the
    * intensities near the surface boundaries.
    */
-  void addIntensityBearingVectors(const Point& origin,
-                                  const Pointcloud& bearing_vectors,
-                                  //const std::vector<float>& intensities, // TODO: Remove
-                                  const float intensity);
+  void addRadiationSensorValueBearingVectors(const Point& origin,
+                                             const Pointcloud& bearing_vectors,
+                                             const float radiation_sensor_value);
 
   /**  // TODO
    *
    * @param dist_func
-   * @param in_intensity
-   * @param in_distance
-   * @param tmp_intensity
-   * @param tmp_weight
+   * @param radiation_sensor_value
+   * @param distance
+   * @param intensity
+   * @param confidence
    */
-  void calcTmpIntensityAndWeight(const float in_intensity, const float in_distance,
-                                 float& tmp_intensity, float& tmp_weight);
+  void calcIntensityAndConfidence(const float radiation_sensor_value, const float distance,
+                                  float& intensity, float& confidence);
 
  private:
+//  float radiation_sensor_min_;  // TODO:Remove
+//  float radiation_sensor_max_;  // TODO:Remove
+  bool use_logarithm_;
   FloatingPoint max_distance_;
 //  float max_weight;  // TODO: Remove
-  float tmp_weight;  // <= added
-  float tmp_intensity;  // <== added
+
   /// Number of voxels to propagate from the surface along the bearing vector.
   int intensity_prop_voxel_radius_;
 
