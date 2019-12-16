@@ -55,7 +55,7 @@ namespace voxblox {
       // Get temporal intensity and confidence to check if an update is necessary and perform it if necessary
       float intensity, confidence;
       calcIntensityAndConfidence(radiation_sensor_value, distance, intensity, confidence);
-      printf("Intensity = %f // Confidence = %f\n", intensity, confidence);
+//      printf("Intensity = %f // Confidence = %f\n", intensity, confidence);  // TODO: Remove
 
       // Update intensity and confidence if needed
       updateIntensityAndWeight(voxel, intensity, confidence);
@@ -91,11 +91,13 @@ namespace voxblox {
 
     // Apply the desired function
     if (dist_func_ == 'i') {  // increasing
-      intensity =  intensity * distance * distance;
+//      intensity =  intensity * distance * distance;
+      intensity = intensity * pow(distance + 1, 2);
     } else if (dist_func_ == 'd') {  // decreasing
-      intensity =  intensity / (distance * distance);
+//      intensity =  intensity / (distance * distance);
+      intensity = intensity / pow(distance + 1, 2);
     } else if (dist_func_ == 'c') {  // constant
-      intensity =  intensity;
+      intensity = intensity;
     } else {  // zero
       intensity =  0.0;
     }
