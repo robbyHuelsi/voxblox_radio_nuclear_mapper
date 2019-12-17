@@ -3,7 +3,10 @@
 namespace voxblox {
   RadioNuclearMapperIntegrator::RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
                                                              Layer<IntensityVoxel>* intensity_layer)
-      : max_distance_(5.0),
+      : // radiation_sensor_min_(0.0),  // TODO:Remove
+        // radiation_sensor_max_(1.0),  // TODO:Remove
+        use_logarithm_(false),
+        max_distance_(5.0),
         intensity_prop_voxel_radius_(2),
         tsdf_layer_(tsdf_layer),
         intensity_layer_(intensity_layer),
@@ -23,8 +26,9 @@ namespace voxblox {
     printf("dist_func_ = %c\n", dist_func_);
   }
 
-  void RadioNuclearMapperIntegrator::addIntensityBearingVectors(const Point& origin, const Pointcloud& bearing_vectors,
-                                                                const float intensity) {
+  void RadioNuclearMapperIntegrator::addRadiationSensorValueBearingVectors(const Point& origin,
+                                                                           const Pointcloud& bearing_vectors,
+                                                                           const float radiation_sensor_value){
     timing::Timer intensity_timer("intensity/integrate");
     const FloatingPoint voxel_size = tsdf_layer_.voxel_size();
 
@@ -48,12 +52,13 @@ namespace voxblox {
       IntensityVoxel& voxel =
           block_ptr->getVoxelByCoordinates(surface_intersection);
 
-      // Get temporal intensity and weight to check if an update is necessary and perform it if necessary
-      calcTmpIntensityAndWeight(intensity, distance, tmp_intensity, tmp_weight);
-      printf("Intensity = %f // Weight = %f\n", tmp_intensity, tmp_weight);
+      // Get temporal intensity and confidence to check if an update is necessary and perform it if necessary
+      float intensity, confidence;
+      calcIntensityAndConfidence(radiation_sensor_value, distance, intensity, confidence);
+//      printf("Intensity = %f // Confidence = %f\n", intensity, confidence);  // TODO: Remove
 
-      // Update intensity and weight if needed
-      updateIntensityAndWeight(voxel, tmp_intensity, tmp_weight);
+      // Update intensity and confidence if needed
+      updateIntensityAndWeight(voxel, intensity, confidence);
 
       // Now check the surrounding voxels along the bearing vector. If they have
       // never been observed, then fill in their value. Otherwise don't.
@@ -67,34 +72,50 @@ namespace voxblox {
         IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
 
         // Update intensity and weight if needed
-        updateIntensityAndWeight(new_voxel, tmp_intensity, tmp_weight);
+        updateIntensityAndWeight(new_voxel, intensity, confidence);
       }
     }
   }
 
-  void RadioNuclearMapperIntegrator::calcTmpIntensityAndWeight(const float in_intensity, const float in_distance,
-                                                               float& tmp_intensity, float& tmp_weight) {
-    // Using weight property of a voxel as a confidence value
-    // define a temporal weight as the inverse of the distance
-    if (in_distance < 1e-6){
-      tmp_weight = std::numeric_limits<float>::infinity();
+  void RadioNuclearMapperIntegrator::calcIntensityAndConfidence(const float radiation_sensor_value,
+                                                                const float distance,
+                                                                float& intensity, float& confidence) {
+    intensity = radiation_sensor_value;
+
+    // Define confidence as the inverse of the distance
+    if (distance < 1e-6){
+      confidence = std::numeric_limits<float>::infinity();
     } else {
-      tmp_weight = 1 / in_distance;
+      confidence = 1 / distance;
     }
 
+    // Apply the desired function
     if (dist_func_ == 'i') {  // increasing
-      tmp_intensity =  in_intensity * in_distance * in_distance;
+//      intensity =  intensity * distance * distance;
+      intensity = intensity * pow(distance + 1, 2);
     } else if (dist_func_ == 'd') {  // decreasing
-      tmp_intensity =  in_intensity / (in_distance * in_distance);
+//      intensity =  intensity / (distance * distance);
+      intensity = intensity / pow(distance + 1, 2);
     } else if (dist_func_ == 'c') {  // constant
-      tmp_intensity =  in_intensity;
+      intensity = intensity;
     } else {  // zero
-      tmp_intensity =  0.0;
+      intensity =  0.0;
     }
+
+    // Use logarithmic mapping if needed
+    if(use_logarithm_){
+      intensity = log(intensity);
+      intensity = intensity < 0.0 ? 0.0 : intensity;  // TODO: Comment
+    }
+
+//    // Normalize between 0.0 and 1.0  // TODO: Remove
+//    intensity = radiation_sensor_min_ + intensity / (radiation_sensor_max_ - radiation_sensor_min_);
+
   }
 
   void RadioNuclearMapperIntegrator::updateIntensityAndWeight(voxblox::IntensityVoxel& voxel,
                                                               const float in_intensity, const float in_weight){
+    // Using weight property of a voxel as a confidence value
     // If the temporal weight (or confidence) is higher than the stored one, update weight and check the intensity
     if (in_weight >= voxel.weight){
       voxel.weight = in_weight;
