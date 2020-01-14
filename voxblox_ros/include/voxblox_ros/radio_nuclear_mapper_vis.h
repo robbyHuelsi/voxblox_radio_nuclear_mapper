@@ -35,7 +35,7 @@ namespace voxblox {
     }
   }*/
 
-    // Go over all the blocks in the mesh.
+    // Go over all the blocks in the mesh message.
     for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
       // Look up verticies in the thermal layer.
       for (size_t vert_idx = 0u; vert_idx < mesh_block.x.size(); ++vert_idx) {

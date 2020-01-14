@@ -1,5 +1,7 @@
 #include "voxblox_ros/radio_nuclear_mapper_server.h"
 
+#include "voxblox/core/common.h" // TODO
+
 namespace voxblox {
 
   RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh,
@@ -259,5 +261,92 @@ namespace voxblox {
     }
 
   }
+
+  //TODO
+  bool RadioNuclearMapperServer::generateMesh() {
+//    timing::Timer generate_mesh_timer("mesh/generate");
+//    const bool clear_mesh = true;
+//    if (clear_mesh) {
+//      constexpr bool only_mesh_updated_blocks = false;
+//      constexpr bool clear_updated_flag = true;
+//      mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+//                                     clear_updated_flag);
+//    } else {
+//      constexpr bool only_mesh_updated_blocks = true;
+//      constexpr bool clear_updated_flag = true;
+//      mesh_integrator_->generateMesh(only_mesh_updated_blocks,
+//                                     clear_updated_flag);
+//    }
+//    generate_mesh_timer.Stop();
+
+//    timing::Timer publish_mesh_timer("mesh/publish");
+//    voxblox_msgs::Mesh mesh_msg;
+//    generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
+//    mesh_msg.header.frame_id = world_frame_;
+//    mesh_pub_.publish(mesh_msg);
+//
+//    publish_mesh_timer.Stop();
+
+    if (!mesh_filename_.empty()) {
+      timing::Timer output_mesh_timer("mesh/output");
+
+      Mesh output_mesh = Mesh(mesh_layer_->block_size(), Point::Zero()); // mesh_layer.block_size()
+
+//      BlockIndexList mesh_indices;
+//      intensity_layer_->getAllAllocatedBlocks(&mesh_indices); // getAllUpdatedBlocks() Was für ein Status bit?
+
+//      mesh_indices.clear();
+//      mesh_indices.reserve(cached_mesh_msg_.mesh_blocks.); // mesh_map_.size()
+      // Go over all the blocks in the mesh message.
+      AlignedVector<Mesh::ConstPtr> meshes;
+      meshes.reserve(cached_mesh_msg_.mesh_blocks.size());
+      for (voxblox_msgs::MeshBlock& mesh_block : cached_mesh_msg_.mesh_blocks) {
+        //meshes.push_back(getMeshPtrByIndex(block_index)); //TODO
+        //meshes.push_back(mesh_block.index);
+        Point p;
+        p[0] = mesh_block.x;
+        //mesh_block.y, mesh_block.z];
+        output_mesh.vertices.push_back(p);
+        output_mesh.colors.push_back(color);
+        output_mesh.normals.push_back(p);
+        output_mesh.indices.push_back(index + num_vertices_before);
+        }
+      }
+//
+//
+//
+//      MeshLayer ml = MeshLayer()
+//      cached_mesh_msg_.mesh_blocks
+
+//      const bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
+      const bool success = outputMeshAsPly(mesh_filename_, output_mesh.);
+      output_mesh_timer.Stop();
+      if (success) {
+        ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
+      } else {
+        ROS_INFO("Failed to output mesh as PLY: %s", mesh_filename_.c_str());
+      }
+    }
+
+    ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
+    return true;
+  }
+
+//  void getConnectedMesh(
+//      Mesh* connected_mesh,
+//      const FloatingPoint approximate_vertex_proximity_threshold =
+//      1e-10) const {
+//    BlockIndexList mesh_indices;
+//    getAllAllocatedMeshes(&mesh_indices);
+//
+//    AlignedVector<Mesh::ConstPtr> meshes;
+//    meshes.reserve(mesh_indices.size());
+//    for (const BlockIndex& block_index : mesh_indices) {
+//      meshes.push_back(getMeshPtrByIndex(block_index));
+//    }
+//
+//    createConnectedMesh(meshes, connected_mesh,
+//                        approximate_vertex_proximity_threshold);
+//  }
 
 }  // namespace voxblox

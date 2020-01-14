@@ -29,6 +29,10 @@ namespace voxblox {
       virtual void updateMesh();
       virtual void publishPointclouds();
 
+      //TODO
+      /// Batch update.
+      virtual bool generateMesh();
+
     protected:
       /// Intensity layer, integrator, and color maps, all related to storing
       /// and visualizing intensity data.
