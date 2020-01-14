@@ -10,15 +10,16 @@
 #include <voxblox/utils/color_maps.h>
 
 #include "voxblox_ros/radio_nuclear_mapper_vis.h"
-#include "voxblox_ros/intensity_server.h"
+//#include "voxblox_ros/intensity_server.h" //TODO
 #include "voxblox_ros/tsdf_server.h"
 
 // radiological nuclear mapper
 #include <abc_msgs_fkie/MeasurementRaw.h>
+#include <std_msgs/String.h>
 
 namespace voxblox {
 
-  class RadioNuclearMapperServer : public IntensityServer {
+  class RadioNuclearMapperServer : public TsdfServer {
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -45,6 +46,9 @@ namespace voxblox {
       int radiation_ang_res_y_;
       int radiation_ang_res_z_;
 
+      /// Parameters for mesh saving
+      std::string save_mesh_trigger_topic_;
+
       /// Visualization tools
       std::shared_ptr<ColorMap> color_map_;
 
@@ -52,8 +56,11 @@ namespace voxblox {
       ros::Publisher radiation_pointcloud_pub_;
       ros::Publisher radiation_mesh_pub_;
 
-      /// Subscriber for Radiation message.
+      /// Subscribe radiation intensity
       ros::Subscriber radiation_sensor_sub_;
+
+      /// Subscribe save mesh trigger
+      ros::Subscriber save_mesh_trigger_sub_;
 
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);

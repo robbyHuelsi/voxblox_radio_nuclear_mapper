@@ -2,8 +2,9 @@
 
 namespace voxblox {
 
-  RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private):
-  IntensityServer(nh, nh_private) {
+  RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh,
+                                                     const ros::NodeHandle& nh_private)
+      : TsdfServer(nh, nh_private) {
 
     cache_mesh_ = true;
 
@@ -37,6 +38,11 @@ namespace voxblox {
     float intensity_max_value = *std::max_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
     color_map_->setMinValue(intensity_min_value);
     color_map_->setMaxValue(intensity_max_value);
+
+    //TODO:
+    TsdfServer::color_map_->setMinValue(intensity_min_value);
+    TsdfServer::color_map_->setMaxValue(intensity_max_value);
+
     ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
 
     // Publishers for output.
@@ -46,9 +52,13 @@ namespace voxblox {
     radiation_mesh_pub_ =
         nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
-    // Subscribe nuclear intensity
+    /// Subscribe radiation intensity
     radiation_sensor_sub_ = nh_private_.subscribe(
         radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
+
+    /// Subscribe save mesh trigger
+    save_mesh_trigger_sub_ = nh_private_.subscribe(
+        save_mesh_trigger_topic_, 1, &RadioNuclearMapperServer::saveMeshTriggerCallback, this);
   }
 
   void RadioNuclearMapperServer::getServerConfigFromRosParam(
@@ -64,6 +74,7 @@ namespace voxblox {
     radiation_ang_res_y_ = 100;
     radiation_ang_res_z_ = 100;
     std::string color_map_scheme = "ironbow";
+    save_mesh_trigger_topic_ = "";
 
     /// Get ROS parameters
     nh_private.param<std::string>("radiation_sensor_topic", radiation_sensor_topic_, radiation_sensor_topic_);
@@ -76,6 +87,7 @@ namespace voxblox {
     nh_private.param("radiation_ang_res_y_", radiation_ang_res_y_, radiation_ang_res_y_);
     nh_private.param("radiation_ang_res_z_", radiation_ang_res_z_, radiation_ang_res_z_);
     nh_private.param("radiation_colormap", color_map_scheme, color_map_scheme);
+    nh_private.param<std::string>("save_mesh_trigger_topic", save_mesh_trigger_topic_, save_mesh_trigger_topic_);
 
     /// Check parameter validity for sensor topic parameter and print it
     if(radiation_sensor_topic_.empty()){
@@ -140,11 +152,18 @@ namespace voxblox {
       color_map_scheme_valid = true;
     }
     if (color_map_scheme_valid) {
+      TsdfServer::color_map_.reset(color_map_.get());
+
       ROS_INFO_STREAM("Color scheme for color map: " << color_map_scheme);
     } else {
       ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme);
       ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
                       "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow");
+    }
+
+    /// Check parameter validity for save mesh trigger parameter and print it
+    if(!save_mesh_trigger_topic_.empty()){
+      ROS_INFO_STREAM("Save generated mesh with message at this topic: " << save_mesh_trigger_topic_);
     }
   }
 
