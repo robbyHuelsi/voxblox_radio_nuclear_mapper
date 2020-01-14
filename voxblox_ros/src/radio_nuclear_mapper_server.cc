@@ -234,4 +234,30 @@ namespace voxblox {
     rnm_integrator_->addRadiationSensorValueBearingVectors(
         T_G_C.getPosition(), bearing_vectors, radiation_sensor_value);
   }
+
+  void RadioNuclearMapperServer::saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg){
+    CHECK(msg);
+
+    // Get value from subscriber message
+    std::string message = msg->data.data();
+
+    ROS_INFO_STREAM("Save Message Trigger Message: " << message);
+
+    if (message.compare("true") == 0) {
+      time_t raw_time;
+      struct tm * time_info;
+      char time_buffer[80];
+      time (&raw_time);
+      time_info = localtime(&raw_time);
+      strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
+      std::string time_str = time_buffer;
+
+      std::string old_filename = mesh_filename_;
+      mesh_filename_ = "" + time_str + ".ply";
+      generateMesh();
+      mesh_filename_ = old_filename;
+    }
+
+  }
+
 }  // namespace voxblox

@@ -64,6 +64,7 @@ namespace voxblox {
 
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
+      void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
   };
 
 }  // namespace voxblox
