@@ -32,12 +32,17 @@ namespace voxblox {
       //TODO
       /// Batch update.
       virtual bool generateMesh();
+      virtual bool generateMesh(Mesh mesh);
+      virtual bool generateMeshFromIntensityLayer(const Layer<IntensityVoxel>& intensity_layer,
+                                                  const std::shared_ptr<ColorMap>& color_map);
 
     protected:
       /// Intensity layer, integrator, and color maps, all related to storing
       /// and visualizing intensity data.
       std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
       std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
+      Mesh radiation_mesh_; //New
+      std::vector<Point> mesh_points;
 
       /// Parameters for radiological nuclear mapper
       std::string radiation_sensor_topic_;

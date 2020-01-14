@@ -13,7 +13,9 @@ namespace voxblox {
 
   inline void recolorVoxbloxMeshMsgByRadioNuclearIntensity(
       const Layer<IntensityVoxel>& intensity_layer,
-      const std::shared_ptr<ColorMap>& color_map, voxblox_msgs::Mesh* mesh_msg) {
+      const std::shared_ptr<ColorMap>& color_map,
+      voxblox_msgs::Mesh* mesh_msg,
+      Mesh* mesh) {
     CHECK_NOTNULL(mesh_msg);
     CHECK(color_map);
 
@@ -34,6 +36,9 @@ namespace voxblox {
       }
     }
   }*/
+
+    const size_t num_vertices_before = mesh->vertices.size();
+    VertexIndex idx = 0;
 
     // Go over all the blocks in the mesh message.
     for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
@@ -59,33 +64,40 @@ namespace voxblox {
         const float mesh_z =
             (static_cast<float>(mesh_block.z[vert_idx]) * point_conv_factor +
              static_cast<float>(mesh_block.index[2])) * mesh_msg->block_edge_length;
+        Point p = Point(mesh_x, mesh_y, mesh_z);
 
-        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(
-            Point(mesh_x, mesh_y, mesh_z));
+        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
 
         //std::cout << "Voxel: x: " << mesh_x << std::endl;
 //        std::cout << "Voxel: X: " << mesh_x << "; y: " << mesh_y << "; z: " << mesh_z << std::endl;
 
-        if (voxel == nullptr) {
-          //printf("voxel is null pointer!");
-        } else if (voxel->weight <= 0.0) {
-//          std::cout << "weight too small" << std::endl;
-        }
+//        if (voxel == nullptr) {
+//          //printf("voxel is null pointer!");
+//        } else if (voxel->weight <= 0.0) {
+////          std::cout << "weight too small" << std::endl;
+//        }
+
+        Color c;
         if (voxel != nullptr && voxel->weight > 0.0) {
           float intensity = voxel->intensity;
           //printf("Intensity: %f", intensity);
 //          std::cout << "Intensity: " << intensity << std::endl;
-          Color new_color = color_map->colorLookup(intensity);
-          mesh_block.r[vert_idx] = new_color.r;
-          mesh_block.g[vert_idx] = new_color.g;
-          mesh_block.b[vert_idx] = new_color.b;
+          c = color_map->colorLookup(intensity);
 
         } else {
-          Color new_color = color_map->colorLookup(0.0);
-          mesh_block.r[vert_idx] = new_color.r;
-          mesh_block.g[vert_idx] = new_color.g;
-          mesh_block.b[vert_idx] = new_color.b;
+          c = color_map->colorLookup(0.0);
         }
+
+        //Update mesh message color
+        mesh_block.r[vert_idx] = c.r;
+        mesh_block.g[vert_idx] = c.g;
+        mesh_block.b[vert_idx] = c.b;
+
+        //Add to mesh
+        mesh->vertices.push_back(p);
+        mesh->colors.push_back(c);
+        mesh->normals.push_back(p);
+        mesh->indices.push_back(num_vertices_before + idx++);
       }
     }
   }

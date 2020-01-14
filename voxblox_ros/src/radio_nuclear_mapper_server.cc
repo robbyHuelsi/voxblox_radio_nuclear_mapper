@@ -15,6 +15,8 @@ namespace voxblox {
     rnm_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
                                                            intensity_layer_.get()));
 
+    radiation_mesh_ = Mesh(mesh_layer_->block_size(), Point::Zero()); //TODO: überprüfen, od mesh_layer.block_size() hier richtig ist //New
+
     /// Get ROS params for radiation sensor
     getServerConfigFromRosParam(nh_private_);
 
@@ -174,8 +176,11 @@ namespace voxblox {
 
     // Now recolor the mesh...
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
+
+    // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
-                                     &cached_mesh_msg_);
+                                     &cached_mesh_msg_, &radiation_mesh_);
+    // generateMesh(tmp_mesh);
     radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
   }
@@ -246,107 +251,82 @@ namespace voxblox {
     ROS_INFO_STREAM("Save Message Trigger Message: " << message);
 
     if (message.compare("true") == 0) {
-      time_t raw_time;
-      struct tm * time_info;
-      char time_buffer[80];
-      time (&raw_time);
-      time_info = localtime(&raw_time);
-      strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
-      std::string time_str = time_buffer;
-
-      std::string old_filename = mesh_filename_;
-      mesh_filename_ = "" + time_str + ".ply";
-      generateMesh();
-      mesh_filename_ = old_filename;
+      //generateMesh();
+      generateMeshFromIntensityLayer(*intensity_layer_, color_map_);
     }
 
   }
 
   //TODO
-  bool RadioNuclearMapperServer::generateMesh() {
-//    timing::Timer generate_mesh_timer("mesh/generate");
-//    const bool clear_mesh = true;
-//    if (clear_mesh) {
-//      constexpr bool only_mesh_updated_blocks = false;
-//      constexpr bool clear_updated_flag = true;
-//      mesh_integrator_->generateMesh(only_mesh_updated_blocks,
-//                                     clear_updated_flag);
-//    } else {
-//      constexpr bool only_mesh_updated_blocks = true;
-//      constexpr bool clear_updated_flag = true;
-//      mesh_integrator_->generateMesh(only_mesh_updated_blocks,
-//                                     clear_updated_flag);
-//    }
-//    generate_mesh_timer.Stop();
+  bool RadioNuclearMapperServer::generateMesh(){
+    return generateMesh(radiation_mesh_);
+  }
 
-//    timing::Timer publish_mesh_timer("mesh/publish");
-//    voxblox_msgs::Mesh mesh_msg;
-//    generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
-//    mesh_msg.header.frame_id = world_frame_;
-//    mesh_pub_.publish(mesh_msg);
-//
-//    publish_mesh_timer.Stop();
+  //TODO
+  bool RadioNuclearMapperServer::generateMesh(Mesh mesh) {
+    time_t raw_time;
+    struct tm * time_info;
+    char time_buffer[80];
+    time (&raw_time);
+    time_info = localtime(&raw_time);
+    strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
+    std::string time_str = time_buffer;
 
-    if (!mesh_filename_.empty()) {
-      timing::Timer output_mesh_timer("mesh/output");
+    struct timeval seconds;
+    gettimeofday(&seconds, NULL);
+    std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
 
-      Mesh output_mesh = Mesh(mesh_layer_->block_size(), Point::Zero()); // mesh_layer.block_size()
+    std::string filename = "" + time_str + "-" + miliseconds_str + ".ply";
 
-//      BlockIndexList mesh_indices;
-//      intensity_layer_->getAllAllocatedBlocks(&mesh_indices); // getAllUpdatedBlocks() Was für ein Status bit?
+    timing::Timer output_mesh_timer("mesh/output");
+    const bool success = outputMeshAsPly(filename, mesh);
+    output_mesh_timer.Stop();
 
-//      mesh_indices.clear();
-//      mesh_indices.reserve(cached_mesh_msg_.mesh_blocks.); // mesh_map_.size()
-      // Go over all the blocks in the mesh message.
-      AlignedVector<Mesh::ConstPtr> meshes;
-      meshes.reserve(cached_mesh_msg_.mesh_blocks.size());
-      for (voxblox_msgs::MeshBlock& mesh_block : cached_mesh_msg_.mesh_blocks) {
-        //meshes.push_back(getMeshPtrByIndex(block_index)); //TODO
-        //meshes.push_back(mesh_block.index);
-        Point p;
-        p[0] = mesh_block.x;
-        //mesh_block.y, mesh_block.z];
-        output_mesh.vertices.push_back(p);
-        output_mesh.colors.push_back(color);
-        output_mesh.normals.push_back(p);
-        output_mesh.indices.push_back(index + num_vertices_before);
-        }
-      }
-//
-//
-//
-//      MeshLayer ml = MeshLayer()
-//      cached_mesh_msg_.mesh_blocks
-
-//      const bool success = outputMeshLayerAsPly(mesh_filename_, *mesh_layer_);
-      const bool success = outputMeshAsPly(mesh_filename_, output_mesh.);
-      output_mesh_timer.Stop();
-      if (success) {
-        ROS_INFO("Output file as PLY: %s", mesh_filename_.c_str());
-      } else {
-        ROS_INFO("Failed to output mesh as PLY: %s", mesh_filename_.c_str());
-      }
+    if (success) {
+      ROS_INFO("Output file as PLY: %s", filename.c_str());
+    } else {
+      ROS_INFO("Failed to output mesh as PLY: %s", filename.c_str());
     }
 
     ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
     return true;
   }
 
-//  void getConnectedMesh(
-//      Mesh* connected_mesh,
-//      const FloatingPoint approximate_vertex_proximity_threshold =
-//      1e-10) const {
-//    BlockIndexList mesh_indices;
-//    getAllAllocatedMeshes(&mesh_indices);
-//
-//    AlignedVector<Mesh::ConstPtr> meshes;
-//    meshes.reserve(mesh_indices.size());
-//    for (const BlockIndex& block_index : mesh_indices) {
-//      meshes.push_back(getMeshPtrByIndex(block_index));
-//    }
-//
-//    createConnectedMesh(meshes, connected_mesh,
-//                        approximate_vertex_proximity_threshold);
-//  }
+  bool RadioNuclearMapperServer::generateMeshFromIntensityLayer(const Layer<IntensityVoxel>& intensity_layer,
+                                                                const std::shared_ptr<ColorMap>& color_map){
+    Mesh output_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
+    VertexIndex  mesh_index = 0;
+
+    size_t vps = intensity_layer.voxels_per_side();
+    size_t nps = vps * vps * vps;
+    size_t counter = 0;
+
+    BlockIndexList block_index_list;
+    intensity_layer.getAllAllocatedBlocks(&block_index_list);
+    size_t block_size = block_index_list.size();
+    for (BlockIndex block_index : block_index_list) {
+      const Block<IntensityVoxel>& block = intensity_layer.getBlockByIndex(block_index);
+      for (size_t linear_index = 0; linear_index < nps; ++linear_index) {
+        Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
+        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(coord);
+        if (voxel != nullptr) {
+          //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
+          // std::cout << counter << ": Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
+
+          //Add to mesh
+          output_mesh.vertices.push_back(coord);
+          output_mesh.colors.push_back(color_map->colorLookup(voxel->intensity));
+          //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
+          output_mesh.normals.push_back(coord);
+          output_mesh.indices.push_back(mesh_index++);
+        } else {
+          std::cout << counter << ": Voxel is nullptr" << std::endl;
+        }
+        counter++;
+      }
+    }
+
+    return generateMesh(output_mesh);
+  }
 
 }  // namespace voxblox
