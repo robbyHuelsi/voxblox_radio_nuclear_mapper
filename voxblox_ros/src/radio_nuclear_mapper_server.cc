@@ -177,9 +177,10 @@ namespace voxblox {
     // Now recolor the mesh...
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
 
+    Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
-                                     &cached_mesh_msg_, &radiation_mesh_);
+                                     &cached_mesh_msg_, &tmp_mesh);
     // generateMesh(tmp_mesh);
     radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
@@ -294,8 +295,6 @@ namespace voxblox {
 
   bool RadioNuclearMapperServer::generateMeshFromIntensityLayer(const Layer<IntensityVoxel>& intensity_layer,
                                                                 const std::shared_ptr<ColorMap>& color_map){
-    Mesh output_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
-    VertexIndex  mesh_index = 0;
 
     size_t vps = intensity_layer.voxels_per_side();
     size_t nps = vps * vps * vps;
@@ -304,6 +303,10 @@ namespace voxblox {
     BlockIndexList block_index_list;
     intensity_layer.getAllAllocatedBlocks(&block_index_list);
     size_t block_size = block_index_list.size();
+
+    Mesh output_mesh = Mesh(block_size, Point::Zero());
+    VertexIndex  mesh_index = 0;
+
     for (BlockIndex block_index : block_index_list) {
       const Block<IntensityVoxel>& block = intensity_layer.getBlockByIndex(block_index);
       for (size_t linear_index = 0; linear_index < nps; ++linear_index) {
