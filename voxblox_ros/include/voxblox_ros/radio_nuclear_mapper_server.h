@@ -35,6 +35,9 @@ namespace voxblox {
       virtual bool generateMesh(Mesh mesh);
       virtual bool generateMeshFromIntensityLayer(const Layer<IntensityVoxel>& intensity_layer,
                                                   const std::shared_ptr<ColorMap>& color_map);
+      virtual bool generateMeshFromMeshPoints(std::vector<Point> mesh_points,
+                                            const Layer<IntensityVoxel>& intensity_layer,
+                                            const std::shared_ptr<ColorMap>& color_map);
 
     protected:
       /// Intensity layer, integrator, and color maps, all related to storing
@@ -42,7 +45,7 @@ namespace voxblox {
       std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
       std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
       Mesh radiation_mesh_; //New
-      std::vector<Point> mesh_points; //New
+      std::vector<Point> mesh_points_; //New
 
       /// Parameters for radiological nuclear mapper
       std::string radiation_sensor_topic_;
@@ -74,6 +77,8 @@ namespace voxblox {
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
       void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
+
+      //bool mesh_points_unique_pred(Point a, Point b); //TODO
   };
 
 }  // namespace voxblox

@@ -4,6 +4,10 @@
 
 namespace voxblox {
 
+  bool mesh_points_unique_pred(Point a, Point b){
+    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] ? 1 : 0;
+  }
+
   RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh,
                                                      const ros::NodeHandle& nh_private)
       : TsdfServer(nh, nh_private) {
@@ -182,6 +186,25 @@ namespace voxblox {
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
                                      &cached_mesh_msg_, &tmp_mesh);
     // generateMesh(tmp_mesh);
+
+    for (voxblox_msgs::MeshBlock& mesh_block : cached_mesh_msg_.mesh_blocks) {
+      // Look up verticies in the thermal layer.
+      for (size_t vert_idx = 0u; vert_idx < mesh_block.x.size(); ++vert_idx) {
+        constexpr float point_conv_factor = 2.0f / std::numeric_limits<uint16_t>::max();
+        const float mesh_x =
+            (static_cast<float>(mesh_block.x[vert_idx]) * point_conv_factor +
+             static_cast<float>(mesh_block.index[0])) * cached_mesh_msg_.block_edge_length;
+        const float mesh_y =
+            (static_cast<float>(mesh_block.y[vert_idx]) * point_conv_factor +
+             static_cast<float>(mesh_block.index[1])) * cached_mesh_msg_.block_edge_length;
+        const float mesh_z =
+            (static_cast<float>(mesh_block.z[vert_idx]) * point_conv_factor +
+             static_cast<float>(mesh_block.index[2])) * cached_mesh_msg_.block_edge_length;
+        Point p = Point(mesh_x, mesh_y, mesh_z);
+        mesh_points_.push_back(p);
+      }
+    }
+
     radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
   }
@@ -253,7 +276,7 @@ namespace voxblox {
 
     if (message.compare("true") == 0) {
       //generateMesh();
-      generateMeshFromIntensityLayer(*intensity_layer_, color_map_);
+      generateMeshFromMeshPoints(mesh_points_, *intensity_layer_, color_map_);
     }
 
   }
@@ -330,6 +353,20 @@ namespace voxblox {
     }
 
     return generateMesh(output_mesh);
+  }
+
+  bool RadioNuclearMapperServer::generateMeshFromMeshPoints(std::vector<Point> mesh_points,
+                                                          const Layer<IntensityVoxel>& intensity_layer,
+                                                          const std::shared_ptr<ColorMap>& color_map){
+    std::cout << "before: " << mesh_points.size() << std::endl;
+
+    // make unique
+    std::vector<Point>::iterator it;
+    it = std::unique(mesh_points.begin(), mesh_points.end(), mesh_points_unique_pred);
+    mesh_points.resize(std::distance(mesh_points.begin(), it));
+
+    std::cout << "after: " << mesh_points.size() << std::endl;
+
   }
 
 }  // namespace voxblox
