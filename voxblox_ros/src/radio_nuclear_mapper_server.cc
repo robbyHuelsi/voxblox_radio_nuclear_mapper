@@ -367,6 +367,31 @@ namespace voxblox {
 
     std::cout << "after: " << mesh_points.size() << std::endl;
 
+    Mesh output_mesh = Mesh(mesh_points.size(), Point::Zero());
+    VertexIndex  mesh_index = 0;
+    size_t counter = 0;
+
+    // Go over all the blocks in the mesh message.
+    for (Point p : mesh_points) {
+      const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
+      if (voxel != nullptr) {
+        //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
+        // std::cout << counter << ": Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
+
+        //Add to mesh
+        output_mesh.vertices.push_back(p);
+        output_mesh.colors.push_back(color_map->colorLookup(voxel->intensity));
+        //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
+        output_mesh.normals.push_back(p);
+        output_mesh.indices.push_back(mesh_index++);
+      } else {
+        std::cout << counter << ": Voxel is nullptr" << std::endl;
+      }
+      counter++;
+    }
+
+    return generateMesh(output_mesh);
+
   }
 
 }  // namespace voxblox
