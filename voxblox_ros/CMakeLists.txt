@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(voxblox_ros)
 
 find_package(catkin_simple REQUIRED
-        abc_msgs_fkie)
+        abc_msgs_fkie) # radiological nuclear mapper
 catkin_simple(ALL_DEPS_REQUIRED
-        abc_msgs_fkie)
+        abc_msgs_fkie) # radiological nuclear mapper
+
 
 add_definitions(-std=c++11 -Wall -Wextra)
 
@@ -16,6 +17,7 @@ cs_add_library(${PROJECT_NAME}
   src/interactive_slider.cc
   src/simulation_server.cc
   src/intensity_server.cc
+  src/radio_nuclear_mapper_server.cc
   src/transformer.cc
   src/tsdf_server.cc
 )
@@ -43,6 +45,11 @@ cs_add_executable(intensity_server
   src/intensity_server_node.cc
 )
 target_link_libraries(intensity_server ${PROJECT_NAME})
+
+cs_add_executable(radio_nuclear_mapper_server
+  src/radio_nuclear_mapper_server_node.cc
+)
+target_link_libraries(radio_nuclear_mapper_server ${PROJECT_NAME})
 
 cs_add_executable(simulation_eval
   src/simulation_eval.cc
