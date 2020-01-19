@@ -37,9 +37,9 @@ class RadioNuclearMapperIntegrator {
 //    radiation_sensor_max_ = max_val;
 //  }
 
-  void setUseLogarithm(const bool use_logarithm) {
-    use_logarithm_ = use_logarithm;
-  }
+//  void setUseLogarithm(const bool use_logarithm) {
+//    use_logarithm_ = use_logarithm;
+//  }
 
   /// Set the max distance for projecting into the TSDF layer.
   void setMaxDistance(const FloatingPoint max_distance) {
@@ -47,10 +47,10 @@ class RadioNuclearMapperIntegrator {
   }
   FloatingPoint getMaxDistance() const { return max_distance_; }
 
-  std::vector<std::string> getAllowedDistanceFunctions() const {return allowed_distance_functions_;}
+//  std::vector<std::string> getAllowedDistanceFunctions() const {return allowed_distance_functions_;}
 
 
-  void setDistanceFunction(const std::string distance_function);
+//  void setDistanceFunction(const std::string distance_function);
 
   /**
    * Integrates intensities into the intensity layer by projecting normalized
@@ -70,8 +70,9 @@ class RadioNuclearMapperIntegrator {
    * @param intensity
    * @param confidence
    */
-  void calcIntensityAndConfidence(const float radiation_sensor_value, const float distance,
-                                  float& intensity, float& confidence);
+//  void calcIntensityAndConfidence(const float radiation_sensor_value, const float distance,
+//                                  float& intensity, float& confidence);
+//    void calcConfidence(const float distance, float& confidence);
 
  private:
 //  float radiation_sensor_min_;  // TODO:Remove
@@ -86,8 +87,8 @@ class RadioNuclearMapperIntegrator {
   const Layer<TsdfVoxel>& tsdf_layer_;
   Layer<IntensityVoxel>* intensity_layer_;
 
-  std::vector<std::string> allowed_distance_functions_;
-  char dist_func_;
+//  std::vector<std::string> allowed_distance_functions_;
+//  char dist_func_;
 
   /**  // TODO
    *
@@ -95,8 +96,10 @@ class RadioNuclearMapperIntegrator {
    * @param in_intensity
    * @param in_weight
    */
-  void updateIntensityAndWeight(IntensityVoxel& voxel,
-                                const float in_intensity, const float in_weight);
+//  void updateIntensityAndWeight(IntensityVoxel& voxel,
+//                                const float in_intensity, const float in_weight);
+    void updateIntensityVoxel(voxblox::IntensityVoxel& voxel,
+    const float in_intensity, const float in_distance);
 };
 
 }  // namespace voxblox

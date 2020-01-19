@@ -25,33 +25,15 @@ namespace voxblox {
     getServerConfigFromRosParam(nh_private_);
 
     /// Forward some paramters to integrator
-    rnm_integrator_->setUseLogarithm(radiation_msg_use_log_);
+//    rnm_integrator_->setUseLogarithm(radiation_msg_use_log_);
 //    rnm_integrator_->setRadiationSensorMinValue(radiation_msg_val_min_);  // TODO: Remove
 //    rnm_integrator_->setRadiationSensorMaxValue(radiation_msg_val_max_);  // TODO: Remove
     rnm_integrator_->setMaxDistance(radiation_max_distance_);
-    rnm_integrator_->setDistanceFunction(radiation_distance_function_);
+//    rnm_integrator_->setDistanceFunction(radiation_distance_function_);
 
-    /// Set minumum and maximum value of colormap
-    std::vector<float> intensity_extreme_values;
-    float radiation_msg_extreme_values[] = {radiation_msg_val_min_, radiation_msg_val_max_};
-    float distance_extreme_values[] = {0.0, radiation_max_distance_};
-    float tmp_intensity, tmp_weight;
-    for(float msg: radiation_msg_extreme_values){
-      for(float dist: distance_extreme_values){
-        rnm_integrator_->calcIntensityAndConfidence(msg, dist, tmp_intensity, tmp_weight);
-        intensity_extreme_values.insert(intensity_extreme_values.end(), 1, tmp_intensity);
-      }
-    }
-    float intensity_min_value = *std::min_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
-    float intensity_max_value = *std::max_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
-    color_map_->setMinValue(intensity_min_value);
-    color_map_->setMaxValue(intensity_max_value);
+    setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_, radiation_msg_use_log_, radiation_max_distance_, color_map_);
 
-    //TODO:
-    TsdfServer::color_map_->setMinValue(intensity_min_value);
-    TsdfServer::color_map_->setMaxValue(intensity_max_value);
 
-    ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
 
     // Publishers for output.
     radiation_pointcloud_pub_ =
@@ -75,7 +57,7 @@ namespace voxblox {
     radiation_sensor_topic_ = "";
     radiation_sensor_frame_id_ = "";
     radiation_max_distance_ = rnm_integrator_->getMaxDistance();
-    radiation_distance_function_ = "constant";
+    std::string radiation_distance_function_name = "constant";
     radiation_msg_val_min_ = 0.0;
     radiation_msg_val_max_ = 100000.0;
     radiation_msg_use_log_ = false;
@@ -88,7 +70,7 @@ namespace voxblox {
     nh_private.param<std::string>("radiation_sensor_topic", radiation_sensor_topic_, radiation_sensor_topic_);
     nh_private.param<std::string>("radiation_sensor_frame_id", radiation_sensor_frame_id_, radiation_sensor_frame_id_);
     nh_private.param("radiation_max_distance", radiation_max_distance_, radiation_max_distance_);
-    nh_private.param<std::string>("radiation_distance_function", radiation_distance_function_, radiation_distance_function_);
+    nh_private.param<std::string>("radiation_distance_function", radiation_distance_function_name, radiation_distance_function_name);
     nh_private.param("radiation_msg_val_min", radiation_msg_val_min_, radiation_msg_val_min_);
     nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
     nh_private.param("radiation_msg_use_log", radiation_msg_use_log_, radiation_msg_use_log_);
@@ -114,8 +96,9 @@ namespace voxblox {
     }
 
     /// Check parameter validity for distance parameters and print it
-    std::vector<std::string> allowed_funcs = rnm_integrator_->getAllowedDistanceFunctions();
-    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), radiation_distance_function_) == allowed_funcs.end()){
+    std::vector<std::string> allowed_funcs = {"increasing", "decreasing", "constant"};
+    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), radiation_distance_function_name) == allowed_funcs.end()){
+      radiation_distance_function_ = 'z';
       // Distance function string is not allowed
       ROS_ERROR("Radiation distance function is called by a not supported string.");
       std::stringstream allowed_funcs_ss = std::stringstream();
@@ -125,8 +108,15 @@ namespace voxblox {
       ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " <<
                                                                                               allowed_funcs_ss.str().substr(0, allowed_funcs_ss.str().length()-2));
     }else{
+      if (radiation_distance_function_name == "increasing"){
+        radiation_distance_function_ = 'i';
+      }else if (radiation_distance_function_name == "decreasing"){
+        radiation_distance_function_ = 'd';
+      }else if (radiation_distance_function_name == "constant"){
+        radiation_distance_function_ = 'c';
+      }
       ROS_INFO_STREAM("Radiation will map in a radius of " << radiation_max_distance_ <<
-                                                           " meters with the distance function '" << radiation_distance_function_ << "'.");
+                                                           " meters with the distance function '" << radiation_distance_function_name << "'.");
     }
 
     /// Print message value parameters and make it logarithmic if needed
@@ -175,6 +165,30 @@ namespace voxblox {
     }
   }
 
+  void RadioNuclearMapperServer::setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
+                         const char dist_func, const bool use_logarithm,
+                         const float radiation_max_distance, const std::shared_ptr<ColorMap>& color_map){
+    /// Set minumum and maximum value of colormap
+    std::vector<float> intensity_extreme_values;
+    float radiation_msg_extreme_values[] = {radiation_msg_val_min, radiation_msg_val_max};
+    float distance_extreme_values[] = {0.0, radiation_max_distance};
+    float tmp_intensity;
+    for(float ex_val: radiation_msg_extreme_values){
+      for(float dist: distance_extreme_values){
+        calcIntensity(ex_val, dist, dist_func, use_logarithm, tmp_intensity);
+        intensity_extreme_values.insert(intensity_extreme_values.end(), 1, tmp_intensity);
+      }
+    }
+    float intensity_min_value = *std::min_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
+    float intensity_max_value = *std::max_element(intensity_extreme_values.begin(), intensity_extreme_values.end());
+    color_map->setMinValue(intensity_min_value);
+    color_map->setMaxValue(intensity_max_value);
+    //    //TODO:
+    //    TsdfServer::color_map_->setMinValue(intensity_min_value);
+    //    TsdfServer::color_map_->setMaxValue(intensity_max_value);
+    ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
+  }
+
   void RadioNuclearMapperServer::updateMesh() {
     TsdfServer::updateMesh();
 
@@ -183,6 +197,7 @@ namespace voxblox {
 
     // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
+                                     radiation_distance_function_, radiation_msg_use_log_,
                                      &cached_mesh_msg_, &mesh_points_);
     // generateMesh(tmp_mesh);
 
@@ -255,14 +270,23 @@ namespace voxblox {
 
     ROS_INFO_STREAM("Save Message Trigger Message: " << message);
 
-    if (message.compare("true") == 0) {
+    if (message.compare("original") == 0) {
       generateMesh();
+    }else if (message.compare("all") == 0) {
+      const char distance_functions[] = {'c', 'i', 'd'};
+      for (const char dist_func : distance_functions) {
+        generateMesh(dist_func, radiation_msg_use_log_);
+      }
     }
 
   }
 
   //TODO
-  bool RadioNuclearMapperServer::generateMesh(){
+  bool RadioNuclearMapperServer::generateMesh() {
+    return generateMesh(radiation_distance_function_, radiation_msg_use_log_);
+  }
+
+  bool RadioNuclearMapperServer::generateMesh(const char dist_func, const bool use_logarithm){
     timing::Timer generate_mesh_timer("mesh/generate");
     Mesh mesh = Mesh(mesh_points_.size(), Point::Zero());
     VertexIndex  mesh_index = 0;
@@ -277,7 +301,7 @@ namespace voxblox {
 
       const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
       mesh.vertices.push_back(p);
-      mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map_));
+      mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map_, dist_func, use_logarithm));
       //mesh.normals.push_back(Point(0.0, 0.0, 0.0));
       mesh.normals.push_back(p);
       mesh.indices.push_back(mesh_index++);
@@ -296,7 +320,7 @@ namespace voxblox {
     struct timeval seconds;
     gettimeofday(&seconds, NULL);
     std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
-    std::string filename = "" + time_str + "-" + miliseconds_str + ".ply";
+    std::string filename = "" + time_str + "-" + miliseconds_str + "_" + dist_func + ".ply";
     const bool success = outputMeshAsPly(filename, mesh);
     output_mesh_timer.Stop();
 

@@ -32,6 +32,7 @@ namespace voxblox {
       //TODO
       /// Batch update.
       virtual bool generateMesh();
+      virtual bool generateMesh(const char dist_func, const bool use_logarithm);
 
     protected:
       /// Intensity layer, integrator, and color maps, all related to storing
@@ -45,7 +46,7 @@ namespace voxblox {
       std::string radiation_sensor_topic_;
       std::string radiation_sensor_frame_id_;
       float radiation_max_distance_;
-      std::string radiation_distance_function_;
+      char radiation_distance_function_;
       float radiation_msg_val_min_;
       float radiation_msg_val_max_;
       bool radiation_msg_use_log_;
@@ -69,8 +70,12 @@ namespace voxblox {
       ros::Subscriber save_mesh_trigger_sub_;
 
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
+      void setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
+                             const char dist_func, const bool use_logarithm,
+                             const float radiation_max_distance, const std::shared_ptr<ColorMap>& color_map);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
       void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
+
 
       //bool mesh_points_unique_pred(Point a, Point b); //TODO
   };

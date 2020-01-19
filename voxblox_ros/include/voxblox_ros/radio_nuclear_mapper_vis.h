@@ -10,10 +10,42 @@
 #include "voxblox_ros/mesh_vis.h"
 
 namespace voxblox {
-  Color getColorForVoxelPointer(const IntensityVoxel* voxel, const std::shared_ptr<ColorMap>& color_map){
+    void calcIntensity(const float sensor_value, const float distance,
+                       const char dist_func, const bool use_logarithm, float& intensity) {
+    intensity = sensor_value;
+
+    // Apply the desired function
+    if (dist_func == 'i') {  // increasing
+//      intensity =  intensity * distance * distance;
+      intensity = intensity * pow(distance + 1.0, 2);
+    } else if (dist_func == 'd') {  // decreasing
+//      intensity =  intensity / (distance * distance);
+      intensity = intensity / pow(distance + 1.0, 2);
+    } else if (dist_func == 'c') {  // constant
+      intensity = intensity;
+    } else {  // zero
+      intensity =  0.0;
+    }
+
+    // Use logarithmic mapping if needed
+    if(use_logarithm){
+      intensity = log(intensity);
+      intensity = intensity < 0.0 ? 0.0 : intensity;  // TODO: Comment
+    }
+
+//    // Normalize between 0.0 and 1.0  // TODO: Remove
+//    intensity = radiation_sensor_min_ + intensity / (radiation_sensor_max_ - radiation_sensor_min_);
+
+//      std::cout << dist_func << " & " << (use_logarithm?"log":"no log") << std::endl;
+
+  }
+
+  Color getColorForVoxelPointer(const IntensityVoxel* voxel, const std::shared_ptr<ColorMap>& color_map,
+                                const char dist_func, const bool use_logarithm){
     Color c;
-    if (voxel != nullptr && voxel->weight > 0.0) {
-      float intensity = voxel->intensity;
+    if (voxel != nullptr && 1.0 / voxel->weight > 0.0) {
+      float intensity;
+      calcIntensity(voxel->intensity, voxel->weight, dist_func, use_logarithm, intensity);
       //printf("Intensity: %f", intensity);
 //          std::cout << "Intensity: " << intensity << std::endl;
       c = color_map->colorLookup(intensity);
@@ -27,6 +59,7 @@ namespace voxblox {
   inline void recolorVoxbloxMeshMsgByRadioNuclearIntensity(
       const Layer<IntensityVoxel>& intensity_layer,
       const std::shared_ptr<ColorMap>& color_map,
+      const char dist_func, const bool use_logarithm,
       voxblox_msgs::Mesh* mesh_msg,
       std::vector<Point>* mesh_points_) {
     CHECK_NOTNULL(mesh_msg);
@@ -89,7 +122,7 @@ namespace voxblox {
 ////          std::cout << "weight too small" << std::endl;
 //        }
 
-        Color c = getColorForVoxelPointer(voxel, color_map);
+        Color c = getColorForVoxelPointer(voxel, color_map, dist_func, use_logarithm);
 
         //Update mesh message color
         mesh_block.r[vert_idx] = c.r;
