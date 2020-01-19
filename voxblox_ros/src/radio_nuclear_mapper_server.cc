@@ -181,10 +181,9 @@ namespace voxblox {
     // Now recolor the mesh...
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
 
-    Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
-                                     &cached_mesh_msg_, &tmp_mesh, &mesh_points_);
+                                     &cached_mesh_msg_, &mesh_points_);
     // generateMesh(tmp_mesh);
 
     radiation_mesh_pub_.publish(cached_mesh_msg_);
@@ -257,19 +256,36 @@ namespace voxblox {
     ROS_INFO_STREAM("Save Message Trigger Message: " << message);
 
     if (message.compare("true") == 0) {
-      //generateMesh();
-      generateMeshFromMeshPoints(mesh_points_, *intensity_layer_, color_map_);
+      generateMesh();
     }
 
   }
 
   //TODO
   bool RadioNuclearMapperServer::generateMesh(){
-    return generateMesh(radiation_mesh_);
-  }
+    timing::Timer generate_mesh_timer("mesh/generate");
+    Mesh mesh = Mesh(mesh_points_.size(), Point::Zero());
+    VertexIndex  mesh_index = 0;
+    float num_mesh_points = float(mesh_points_.size());
 
-  //TODO
-  bool RadioNuclearMapperServer::generateMesh(Mesh mesh) {
+    // Go over all the blocks in the mesh message.
+    for (Point p : mesh_points_) {
+      if (mesh_index % 10 == 0){
+        float percentage = std::round(float(mesh_index) / num_mesh_points * 1000.0) / 10.0;
+        std::cout << "Recoloring: " << percentage << " %     \r" <<std::flush;
+      }
+
+      const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
+      mesh.vertices.push_back(p);
+      mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map_));
+      //mesh.normals.push_back(Point(0.0, 0.0, 0.0));
+      mesh.normals.push_back(p);
+      mesh.indices.push_back(mesh_index++);
+    }
+    std::cout << std::endl;
+    generate_mesh_timer.Stop();
+
+    timing::Timer output_mesh_timer("mesh/output");
     time_t raw_time;
     struct tm * time_info;
     char time_buffer[80];
@@ -277,14 +293,10 @@ namespace voxblox {
     time_info = localtime(&raw_time);
     strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
     std::string time_str = time_buffer;
-
     struct timeval seconds;
     gettimeofday(&seconds, NULL);
     std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
-
     std::string filename = "" + time_str + "-" + miliseconds_str + ".ply";
-
-    timing::Timer output_mesh_timer("mesh/output");
     const bool success = outputMeshAsPly(filename, mesh);
     output_mesh_timer.Stop();
 
@@ -298,87 +310,43 @@ namespace voxblox {
     return true;
   }
 
-  bool RadioNuclearMapperServer::generateMeshFromIntensityLayer(const Layer<IntensityVoxel>& intensity_layer,
-                                                                const std::shared_ptr<ColorMap>& color_map){
-
-    size_t vps = intensity_layer.voxels_per_side();
-    size_t nps = vps * vps * vps;
-    size_t counter = 0;
-
-    BlockIndexList block_index_list;
-    intensity_layer.getAllAllocatedBlocks(&block_index_list);
-    size_t block_size = block_index_list.size();
-
-    Mesh output_mesh = Mesh(block_size, Point::Zero());
-    VertexIndex  mesh_index = 0;
-
-    for (BlockIndex block_index : block_index_list) {
-      const Block<IntensityVoxel>& block = intensity_layer.getBlockByIndex(block_index);
-      for (size_t linear_index = 0; linear_index < nps; ++linear_index) {
-        Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
-        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(coord);
-        if (voxel != nullptr) {
-          //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
-          // std::cout << counter << ": Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
-
-          //Add to mesh
-          output_mesh.vertices.push_back(coord);
-          output_mesh.colors.push_back(color_map->colorLookup(voxel->intensity));
-          //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
-          output_mesh.normals.push_back(coord);
-          output_mesh.indices.push_back(mesh_index++);
-        } else {
-          std::cout << counter << ": Voxel is nullptr" << std::endl;
-        }
-        counter++;
-      }
-    }
-
-    return generateMesh(output_mesh);
-  }
-
-  bool RadioNuclearMapperServer::generateMeshFromMeshPoints(std::vector<Point> mesh_points,
-                                                          const Layer<IntensityVoxel>& intensity_layer,
-                                                          const std::shared_ptr<ColorMap>& color_map){
-//    std::cout << "before: " << mesh_points.size() << std::endl;
+//  bool RadioNuclearMapperServer::generateMeshFromIntensityLayer(const Layer<IntensityVoxel>& intensity_layer,
+//                                                                const std::shared_ptr<ColorMap>& color_map){
 //
-//    // make unique
-//    std::vector<Point>::iterator it;
-//    it = std::unique(mesh_points.begin(), mesh_points.end(), mesh_points_unique_pred);
-//    mesh_points.resize(std::distance(mesh_points.begin(), it));
+//    size_t vps = intensity_layer.voxels_per_side();
+//    size_t nps = vps * vps * vps;
+//    size_t counter = 0;
 //
-//    std::cout << "after: " << mesh_points.size() << std::endl;
-
-    Mesh output_mesh = Mesh(mesh_points.size(), Point::Zero());
-    VertexIndex  mesh_index = 0;
-    size_t counter = 0;
-    float num_mesh_points = float(mesh_points.size());
-
-    // Go over all the blocks in the mesh message.
-    for (Point p : mesh_points) {
-      std::cout << "Exporting: " << float(counter) / num_mesh_points * 100.0 << " %\r" <<std::flush;
-
-      const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
-//      if (voxel != nullptr) {
-        //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
-        // std::cout << counter << ": Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
-
-        //Add to mesh
-      output_mesh.vertices.push_back(p);
-      output_mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map));
-      //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
-      output_mesh.normals.push_back(p);
-      output_mesh.indices.push_back(mesh_index++);
-//      } else {
-//        std::cout << counter << ": Voxel is nullptr (Pos.: " << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+//    BlockIndexList block_index_list;
+//    intensity_layer.getAllAllocatedBlocks(&block_index_list);
+//    size_t block_size = block_index_list.size();
+//
+//    Mesh output_mesh = Mesh(block_size, Point::Zero());
+//    VertexIndex  mesh_index = 0;
+//
+//    for (BlockIndex block_index : block_index_list) {
+//      const Block<IntensityVoxel>& block = intensity_layer.getBlockByIndex(block_index);
+//      for (size_t linear_index = 0; linear_index < nps; ++linear_index) {
+//        Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
+//        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(coord);
+//        if (voxel != nullptr) {
+//          //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
+//          // std::cout << counter << ": Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
+//
+//          //Add to mesh
+//          output_mesh.vertices.push_back(coord);
+//          output_mesh.colors.push_back(color_map->colorLookup(voxel->intensity));
+//          //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
+//          output_mesh.normals.push_back(coord);
+//          output_mesh.indices.push_back(mesh_index++);
+//        } else {
+//          std::cout << counter << ": Voxel is nullptr" << std::endl;
+//        }
+//        counter++;
 //      }
-      counter++;
-    }
-
-    std::cout << std::endl;
-
-    return generateMesh(output_mesh);
-
-  }
+//    }
+//
+//    return generateMesh(output_mesh);
+//  }
 
 }  // namespace voxblox

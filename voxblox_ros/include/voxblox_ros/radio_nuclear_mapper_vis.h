@@ -28,7 +28,6 @@ namespace voxblox {
       const Layer<IntensityVoxel>& intensity_layer,
       const std::shared_ptr<ColorMap>& color_map,
       voxblox_msgs::Mesh* mesh_msg,
-      Mesh* mesh,
       std::vector<Point>* mesh_points_) {
     CHECK_NOTNULL(mesh_msg);
     CHECK(color_map);
@@ -50,9 +49,6 @@ namespace voxblox {
       }
     }
   }*/
-
-    const size_t num_vertices_before = mesh->vertices.size();
-    VertexIndex idx = 0;
 
     // Go over all the blocks in the mesh message.
     for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
@@ -99,12 +95,6 @@ namespace voxblox {
         mesh_block.r[vert_idx] = c.r;
         mesh_block.g[vert_idx] = c.g;
         mesh_block.b[vert_idx] = c.b;
-
-        //Add to mesh
-        mesh->vertices.push_back(p);
-        mesh->colors.push_back(c);
-        mesh->normals.push_back(p);
-        mesh->indices.push_back(num_vertices_before + idx++);
       }
     }
   }
