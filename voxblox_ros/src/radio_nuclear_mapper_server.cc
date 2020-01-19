@@ -184,26 +184,8 @@ namespace voxblox {
     Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
-                                     &cached_mesh_msg_, &tmp_mesh);
+                                     &cached_mesh_msg_, &tmp_mesh, &mesh_points_);
     // generateMesh(tmp_mesh);
-
-    for (voxblox_msgs::MeshBlock& mesh_block : cached_mesh_msg_.mesh_blocks) {
-      // Look up verticies in the thermal layer.
-      for (size_t vert_idx = 0u; vert_idx < mesh_block.x.size(); ++vert_idx) {
-        constexpr float point_conv_factor = 2.0f / std::numeric_limits<uint16_t>::max();
-        const float mesh_x =
-            (static_cast<float>(mesh_block.x[vert_idx]) * point_conv_factor +
-             static_cast<float>(mesh_block.index[0])) * cached_mesh_msg_.block_edge_length;
-        const float mesh_y =
-            (static_cast<float>(mesh_block.y[vert_idx]) * point_conv_factor +
-             static_cast<float>(mesh_block.index[1])) * cached_mesh_msg_.block_edge_length;
-        const float mesh_z =
-            (static_cast<float>(mesh_block.z[vert_idx]) * point_conv_factor +
-             static_cast<float>(mesh_block.index[2])) * cached_mesh_msg_.block_edge_length;
-        Point p = Point(mesh_x, mesh_y, mesh_z);
-        mesh_points_.push_back(p);
-      }
-    }
 
     radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
@@ -358,37 +340,42 @@ namespace voxblox {
   bool RadioNuclearMapperServer::generateMeshFromMeshPoints(std::vector<Point> mesh_points,
                                                           const Layer<IntensityVoxel>& intensity_layer,
                                                           const std::shared_ptr<ColorMap>& color_map){
-    std::cout << "before: " << mesh_points.size() << std::endl;
-
-    // make unique
-    std::vector<Point>::iterator it;
-    it = std::unique(mesh_points.begin(), mesh_points.end(), mesh_points_unique_pred);
-    mesh_points.resize(std::distance(mesh_points.begin(), it));
-
-    std::cout << "after: " << mesh_points.size() << std::endl;
+//    std::cout << "before: " << mesh_points.size() << std::endl;
+//
+//    // make unique
+//    std::vector<Point>::iterator it;
+//    it = std::unique(mesh_points.begin(), mesh_points.end(), mesh_points_unique_pred);
+//    mesh_points.resize(std::distance(mesh_points.begin(), it));
+//
+//    std::cout << "after: " << mesh_points.size() << std::endl;
 
     Mesh output_mesh = Mesh(mesh_points.size(), Point::Zero());
     VertexIndex  mesh_index = 0;
     size_t counter = 0;
+    float num_mesh_points = float(mesh_points.size());
 
     // Go over all the blocks in the mesh message.
     for (Point p : mesh_points) {
+      std::cout << "Exporting: " << float(counter) / num_mesh_points * 100.0 << " %\r" <<std::flush;
+
       const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
-      if (voxel != nullptr) {
+//      if (voxel != nullptr) {
         //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
         // std::cout << counter << ": Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
 
         //Add to mesh
-        output_mesh.vertices.push_back(p);
-        output_mesh.colors.push_back(color_map->colorLookup(voxel->intensity));
-        //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
-        output_mesh.normals.push_back(p);
-        output_mesh.indices.push_back(mesh_index++);
-      } else {
-        std::cout << counter << ": Voxel is nullptr" << std::endl;
-      }
+      output_mesh.vertices.push_back(p);
+      output_mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map));
+      //output_mesh.normals.push_back(Point(0.0, 0.0, 0.0));
+      output_mesh.normals.push_back(p);
+      output_mesh.indices.push_back(mesh_index++);
+//      } else {
+//        std::cout << counter << ": Voxel is nullptr (Pos.: " << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+//      }
       counter++;
     }
+
+    std::cout << std::endl;
 
     return generateMesh(output_mesh);
 

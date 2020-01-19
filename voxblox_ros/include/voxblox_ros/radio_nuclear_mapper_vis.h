@@ -10,12 +10,26 @@
 #include "voxblox_ros/mesh_vis.h"
 
 namespace voxblox {
+  Color getColorForVoxelPointer(const IntensityVoxel* voxel, const std::shared_ptr<ColorMap>& color_map){
+    Color c;
+    if (voxel != nullptr && voxel->weight > 0.0) {
+      float intensity = voxel->intensity;
+      //printf("Intensity: %f", intensity);
+//          std::cout << "Intensity: " << intensity << std::endl;
+      c = color_map->colorLookup(intensity);
+
+    } else {
+      c = color_map->colorLookup(0.0);
+    }
+    return c;
+  }
 
   inline void recolorVoxbloxMeshMsgByRadioNuclearIntensity(
       const Layer<IntensityVoxel>& intensity_layer,
       const std::shared_ptr<ColorMap>& color_map,
       voxblox_msgs::Mesh* mesh_msg,
-      Mesh* mesh) {
+      Mesh* mesh,
+      std::vector<Point>* mesh_points_) {
     CHECK_NOTNULL(mesh_msg);
     CHECK(color_map);
 
@@ -66,6 +80,8 @@ namespace voxblox {
              static_cast<float>(mesh_block.index[2])) * mesh_msg->block_edge_length;
         Point p = Point(mesh_x, mesh_y, mesh_z);
 
+        mesh_points_->push_back(p);
+
         const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
 
         //std::cout << "Voxel: x: " << mesh_x << std::endl;
@@ -77,16 +93,7 @@ namespace voxblox {
 ////          std::cout << "weight too small" << std::endl;
 //        }
 
-        Color c;
-        if (voxel != nullptr && voxel->weight > 0.0) {
-          float intensity = voxel->intensity;
-          //printf("Intensity: %f", intensity);
-//          std::cout << "Intensity: " << intensity << std::endl;
-          c = color_map->colorLookup(intensity);
-
-        } else {
-          c = color_map->colorLookup(0.0);
-        }
+        Color c = getColorForVoxelPointer(voxel, color_map);
 
         //Update mesh message color
         mesh_block.r[vert_idx] = c.r;
