@@ -304,6 +304,8 @@ namespace voxblox {
   }
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function, const bool use_logarithm){
+    std::string log_str = use_logarithm?"log":"no-log";
+
     timing::Timer generate_mesh_timer("mesh/generate");
     char dist_func;
     getDistanceFunctionByName(distance_function, dist_func);
@@ -319,7 +321,7 @@ namespace voxblox {
     for (Point p : mesh_points_) {
       if (mesh_index % 10 == 0){
         float percentage = std::round(float(mesh_index) / num_mesh_points * 1000.0) / 10.0;
-        std::cout << "Recoloring for " << distance_function << ": " << percentage << " %     \r" <<std::flush;
+        std::cout << "Recoloring (" << distance_function << " function, " << log_str << "): " << percentage << " %     \r" <<std::flush;
       }
 
       const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
@@ -333,6 +335,7 @@ namespace voxblox {
     generate_mesh_timer.Stop();
 
     timing::Timer output_mesh_timer("mesh/output");
+    std::cout << "Exporting (" << distance_function << " function, " << log_str << ") ..." <<std::flush;
     time_t raw_time;
     struct tm * time_info;
     char time_buffer[80];
@@ -340,10 +343,11 @@ namespace voxblox {
     time_info = localtime(&raw_time);
     strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
     std::string time_str = time_buffer;
-    struct timeval seconds;
-    gettimeofday(&seconds, NULL);
-    std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
-    std::string filename = "" + time_str + "-" + miliseconds_str + "_" + distance_function + ".ply";
+//    struct timeval seconds;
+//    gettimeofday(&seconds, NULL);
+//    std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
+
+    std::string filename = "" + log_str + "_" + distance_function + "_" + time_str + ".ply";
     const bool success = outputMeshAsPly(filename, mesh);
     output_mesh_timer.Stop();
 
