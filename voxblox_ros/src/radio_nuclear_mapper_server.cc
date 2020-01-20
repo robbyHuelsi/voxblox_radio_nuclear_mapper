@@ -139,6 +139,9 @@ namespace voxblox {
     } else if (color_map_scheme_name == "ironbow") {
       color_map.reset(new IronbowColorMap());
       color_map_scheme_valid = true;
+    } else if (color_map_scheme_name == "traffic-light") {
+      color_map.reset(new TrafficLightColorMap());
+      color_map_scheme_valid = true;
     }
     if (color_map_scheme_valid) {
       // todo
@@ -148,7 +151,7 @@ namespace voxblox {
     } else {
       ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme_name);
       ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
-                                                                                    "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow");
+                                                                                    "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow, traffic-light");
     }
     return color_map_scheme_valid;
   }
@@ -316,7 +319,7 @@ namespace voxblox {
     char dist_func;
     getDistanceFunctionByName(distance_function, dist_func);
     std::shared_ptr<ColorMap> export_color_map;
-    setColorMapScheme("ironbow", export_color_map);
+    setColorMapScheme("traffic-light", export_color_map);
     setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, radiation_msg_use_log_, radiation_max_distance_, export_color_map);
 
     Mesh mesh = Mesh(mesh_points_.size(), Point::Zero());
