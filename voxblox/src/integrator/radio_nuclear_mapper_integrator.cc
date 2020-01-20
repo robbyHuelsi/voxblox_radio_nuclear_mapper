@@ -132,12 +132,15 @@ namespace voxblox {
     // Using weight property of a voxel as distance value
     // If the temporal confidence (1/d) is higher than the stored one, update weight and intensity
 //    printf("Voxel: Intensity = %f; Distance = %f\n", in_intensity, in_distance);
-    if (1.0 / in_distance > 1.0 / voxel.weight){
+    if (in_distance < voxel.weight) {
       voxel.weight = in_distance;
-      //      if (tmp_intensity > voxel.intensity){
       voxel.intensity = in_intensity;
-      //      }
+    } else if (in_distance == voxel.weight){
+      if (in_intensity > voxel.intensity) {
+//        printf("Same distance, but current intensity is higher.\n");
+        voxel.intensity = in_intensity;
 //      printf("Voxel updated: Intensity = %f; Distance = %f\n", in_intensity, in_distance);
+      }
     }
   }
 }  // namespace voxblox
