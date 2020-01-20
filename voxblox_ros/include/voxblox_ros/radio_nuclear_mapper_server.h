@@ -26,13 +26,19 @@ namespace voxblox {
       RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
       virtual ~RadioNuclearMapperServer() {}
 
+      virtual bool setColorMapScheme(const std::string color_map_scheme_name, std::shared_ptr<ColorMap>& color_map);
+      virtual bool getDistanceFunctionByName(const std::string distance_function_name, char& dist_func);
+      virtual void setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
+                                     const char dist_func, const bool use_logarithm,
+                                     const float radiation_max_distance, const std::shared_ptr<ColorMap>& color_map);
+
       virtual void updateMesh();
       virtual void publishPointclouds();
 
       //TODO
       /// Batch update.
       virtual bool generateMesh();
-      virtual bool generateMesh(const char dist_func, const bool use_logarithm);
+      virtual bool generateMesh(const std::string& distance_function, const bool use_logarithm);
 
     protected:
       /// Intensity layer, integrator, and color maps, all related to storing
@@ -70,9 +76,6 @@ namespace voxblox {
       ros::Subscriber save_mesh_trigger_sub_;
 
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
-      void setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
-                             const char dist_func, const bool use_logarithm,
-                             const float radiation_max_distance, const std::shared_ptr<ColorMap>& color_map);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
       void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
 

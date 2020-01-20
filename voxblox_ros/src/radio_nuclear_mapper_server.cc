@@ -29,8 +29,9 @@ namespace voxblox {
 //    rnm_integrator_->setRadiationSensorMinValue(radiation_msg_val_min_);  // TODO: Remove
 //    rnm_integrator_->setRadiationSensorMaxValue(radiation_msg_val_max_);  // TODO: Remove
     rnm_integrator_->setMaxDistance(radiation_max_distance_);
-//    rnm_integrator_->setDistanceFunction(radiation_distance_function_);
+//    rnm_integrator_->getDistanceFunctionByName(radiation_distance_function_);
 
+    // todo
     setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_, radiation_msg_use_log_, radiation_max_distance_, color_map_);
 
 
@@ -63,7 +64,7 @@ namespace voxblox {
     radiation_msg_use_log_ = false;
     radiation_ang_res_y_ = 100;
     radiation_ang_res_z_ = 100;
-    std::string color_map_scheme = "ironbow";
+    std::string color_map_scheme_name = "ironbow";
     save_mesh_trigger_topic_ = "";
 
     /// Get ROS parameters
@@ -76,7 +77,7 @@ namespace voxblox {
     nh_private.param("radiation_msg_use_log", radiation_msg_use_log_, radiation_msg_use_log_);
     nh_private.param("radiation_ang_res_y_", radiation_ang_res_y_, radiation_ang_res_y_);
     nh_private.param("radiation_ang_res_z_", radiation_ang_res_z_, radiation_ang_res_z_);
-    nh_private.param("radiation_colormap", color_map_scheme, color_map_scheme);
+    nh_private.param("radiation_colormap", color_map_scheme_name, color_map_scheme_name);
     nh_private.param<std::string>("save_mesh_trigger_topic", save_mesh_trigger_topic_, save_mesh_trigger_topic_);
 
     /// Check parameter validity for sensor topic parameter and print it
@@ -95,10 +96,67 @@ namespace voxblox {
       ROS_INFO_STREAM("Radiation sensor frame id: " << radiation_sensor_frame_id_);
     }
 
-    /// Check parameter validity for distance parameters and print it
+    /// Set color map by given color scheme
+    setColorMapScheme(color_map_scheme_name, color_map_);
+
+    /// Print message value parameters and make it logarithmic if needed
+    ROS_INFO_STREAM("Radiation sensor value range (w/o logarithm): [" << radiation_msg_val_min_ << ", " <<
+                                                                      radiation_msg_val_max_ << "]");
+    if(radiation_msg_use_log_){
+      ROS_INFO_STREAM("Radiation sensor value range (with logarithm): [" <<
+                                                                         (log(radiation_msg_val_min_) < 0.0 ? 0.0 : log(radiation_msg_val_min_)) << ", " <<
+                                                                         log(radiation_msg_val_max_) << "]");
+    }
+
+    /// Check parameter validity for distance parameters and print it //todo
+    getDistanceFunctionByName(radiation_distance_function_name, radiation_distance_function_);
+
+    /// Print resolution parameters
+    ROS_INFO_STREAM("Radiation angular resolution: (y=" << radiation_ang_res_y_ << "; z=" << radiation_ang_res_z_ << ")");
+
+
+
+    /// Check parameter validity for save mesh trigger parameter and print it
+    if(!save_mesh_trigger_topic_.empty()){
+      ROS_INFO_STREAM("Save generated mesh with message at this topic: " << save_mesh_trigger_topic_);
+    }
+  }
+
+  bool RadioNuclearMapperServer::setColorMapScheme(const std::string color_map_scheme_name, std::shared_ptr<ColorMap>& color_map){
+    bool color_map_scheme_valid = false;
+    if (color_map_scheme_name == "rainbow") {
+      color_map.reset(new RainbowColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme_name == "inverse_rainbow") {
+      color_map.reset(new InverseRainbowColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme_name == "grayscale") {
+      color_map.reset(new GrayscaleColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme_name == "inverse_grayscale") {
+      color_map.reset(new InverseGrayscaleColorMap());
+      color_map_scheme_valid = true;
+    } else if (color_map_scheme_name == "ironbow") {
+      color_map.reset(new IronbowColorMap());
+      color_map_scheme_valid = true;
+    }
+    if (color_map_scheme_valid) {
+      // todo
+//      TsdfServer::color_map.reset(color_map.get());
+
+      ROS_INFO_STREAM("Color scheme for color map: " << color_map_scheme_name);
+    } else {
+      ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme_name);
+      ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
+                                                                                    "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow");
+    }
+    return color_map_scheme_valid;
+  }
+
+  bool RadioNuclearMapperServer::getDistanceFunctionByName(const std::string distance_function_name, char& dist_func){
     std::vector<std::string> allowed_funcs = {"increasing", "decreasing", "constant"};
-    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), radiation_distance_function_name) == allowed_funcs.end()){
-      radiation_distance_function_ = 'z';
+    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), distance_function_name) == allowed_funcs.end()){
+      dist_func = 'z';
       // Distance function string is not allowed
       ROS_ERROR("Radiation distance function is called by a not supported string.");
       std::stringstream allowed_funcs_ss = std::stringstream();
@@ -107,62 +165,21 @@ namespace voxblox {
       }
       ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " <<
                                                                                               allowed_funcs_ss.str().substr(0, allowed_funcs_ss.str().length()-2));
+      return false;
     }else{
-      if (radiation_distance_function_name == "increasing"){
-        radiation_distance_function_ = 'i';
-      }else if (radiation_distance_function_name == "decreasing"){
-        radiation_distance_function_ = 'd';
-      }else if (radiation_distance_function_name == "constant"){
-        radiation_distance_function_ = 'c';
+      if (distance_function_name == "increasing" or distance_function_name == "i"){
+        dist_func = 'i';
+      }else if (distance_function_name == "decreasing" or distance_function_name == "d"){
+        dist_func = 'd';
+      }else if (distance_function_name == "constant" or distance_function_name == "c"){
+        dist_func = 'c';
       }
       ROS_INFO_STREAM("Radiation will map in a radius of " << radiation_max_distance_ <<
-                                                           " meters with the distance function '" << radiation_distance_function_name << "'.");
+                                                           " meters with the distance function '" << distance_function_name << "'.");
+      return true;
     }
 
-    /// Print message value parameters and make it logarithmic if needed
-    ROS_INFO_STREAM("Radiation sensor value range (w/o logarithm): [" << radiation_msg_val_min_ << ", " <<
-                                                                      radiation_msg_val_max_ << "]");
-    if(radiation_msg_use_log_){
-      ROS_INFO_STREAM("Radiation sensor value range (with logarithm): [" <<
-                      (log(radiation_msg_val_min_) < 0.0 ? 0.0 : log(radiation_msg_val_min_)) << ", " <<
-                      log(radiation_msg_val_max_) << "]");
-    }
 
-    /// Print resolution parameters
-    ROS_INFO_STREAM("Radiation angular resolution: (y=" << radiation_ang_res_y_ << "; z=" << radiation_ang_res_z_ << ")");
-
-    /// Set color map by given color scheme
-    bool color_map_scheme_valid = false;
-    if (color_map_scheme == "rainbow") {
-      color_map_.reset(new RainbowColorMap());
-      color_map_scheme_valid = true;
-    } else if (color_map_scheme == "inverse_rainbow") {
-      color_map_.reset(new InverseRainbowColorMap());
-      color_map_scheme_valid = true;
-    } else if (color_map_scheme == "grayscale") {
-      color_map_.reset(new GrayscaleColorMap());
-      color_map_scheme_valid = true;
-    } else if (color_map_scheme == "inverse_grayscale") {
-      color_map_.reset(new InverseGrayscaleColorMap());
-      color_map_scheme_valid = true;
-    } else if (color_map_scheme == "ironbow") {
-      color_map_.reset(new IronbowColorMap());
-      color_map_scheme_valid = true;
-    }
-    if (color_map_scheme_valid) {
-      TsdfServer::color_map_.reset(color_map_.get());
-
-      ROS_INFO_STREAM("Color scheme for color map: " << color_map_scheme);
-    } else {
-      ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme);
-      ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
-                      "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow");
-    }
-
-    /// Check parameter validity for save mesh trigger parameter and print it
-    if(!save_mesh_trigger_topic_.empty()){
-      ROS_INFO_STREAM("Save generated mesh with message at this topic: " << save_mesh_trigger_topic_);
-    }
   }
 
   void RadioNuclearMapperServer::setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
@@ -273,8 +290,8 @@ namespace voxblox {
     if (message.compare("original") == 0) {
       generateMesh();
     }else if (message.compare("all") == 0) {
-      const char distance_functions[] = {'c', 'i', 'd'};
-      for (const char dist_func : distance_functions) {
+      const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
+      for (const std::string dist_func : distance_functions) {
         generateMesh(dist_func, radiation_msg_use_log_);
       }
     }
@@ -283,11 +300,17 @@ namespace voxblox {
 
   //TODO
   bool RadioNuclearMapperServer::generateMesh() {
-    return generateMesh(radiation_distance_function_, radiation_msg_use_log_);
+    return generateMesh(std::to_string(radiation_distance_function_), radiation_msg_use_log_);
   }
 
-  bool RadioNuclearMapperServer::generateMesh(const char dist_func, const bool use_logarithm){
+  bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function, const bool use_logarithm){
     timing::Timer generate_mesh_timer("mesh/generate");
+    char dist_func;
+    getDistanceFunctionByName(distance_function, dist_func);
+    std::shared_ptr<ColorMap> color_map;
+    color_map.reset(color_map_.get());
+    setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, radiation_msg_use_log_, radiation_max_distance_, color_map);
+
     Mesh mesh = Mesh(mesh_points_.size(), Point::Zero());
     VertexIndex  mesh_index = 0;
     float num_mesh_points = float(mesh_points_.size());
@@ -296,12 +319,12 @@ namespace voxblox {
     for (Point p : mesh_points_) {
       if (mesh_index % 10 == 0){
         float percentage = std::round(float(mesh_index) / num_mesh_points * 1000.0) / 10.0;
-        std::cout << "Recoloring: " << percentage << " %     \r" <<std::flush;
+        std::cout << "Recoloring for " << distance_function << ": " << percentage << " %     \r" <<std::flush;
       }
 
       const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
       mesh.vertices.push_back(p);
-      mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map_, dist_func, use_logarithm));
+      mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map, dist_func, use_logarithm));
       //mesh.normals.push_back(Point(0.0, 0.0, 0.0));
       mesh.normals.push_back(p);
       mesh.indices.push_back(mesh_index++);
@@ -320,7 +343,7 @@ namespace voxblox {
     struct timeval seconds;
     gettimeofday(&seconds, NULL);
     std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
-    std::string filename = "" + time_str + "-" + miliseconds_str + "_" + dist_func + ".ply";
+    std::string filename = "" + time_str + "-" + miliseconds_str + "_" + distance_function + ".ply";
     const bool success = outputMeshAsPly(filename, mesh);
     output_mesh_timer.Stop();
 
