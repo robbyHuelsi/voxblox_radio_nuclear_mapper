@@ -43,7 +43,7 @@ namespace voxblox {
   Color getColorForVoxelPointer(const IntensityVoxel* voxel, const std::shared_ptr<ColorMap>& color_map,
                                 const char dist_func, const bool use_logarithm){
     Color c;
-    if (voxel != nullptr && 1.0 / voxel->weight > 0.0) {
+    if (voxel != nullptr && voxel->weight < std::numeric_limits<float>::infinity()) { // && 1.0 / voxel->weight > 0.0
       float intensity;
       calcIntensity(voxel->intensity, voxel->weight, dist_func, use_logarithm, intensity);
       //printf("Intensity: %f", intensity);
@@ -51,7 +51,8 @@ namespace voxblox {
       c = color_map->colorLookup(intensity);
 
     } else {
-      c = color_map->colorLookup(0.0);
+//      c = color_map->colorLookup(0.0);
+      c = Color(0.0, 0.0, 0.0, 0.0);
     }
     return c;
   }
