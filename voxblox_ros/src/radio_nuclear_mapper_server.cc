@@ -289,6 +289,12 @@ namespace voxblox {
 
     if (message.compare("original") == 0) {
       generateMesh();
+    }else if (message.compare("constant") == 0) {
+      generateMesh("constant", radiation_msg_use_log_);
+    }else if (message.compare("increasing") == 0) {
+      generateMesh("increasing", radiation_msg_use_log_);
+    }else if (message.compare("decreasing") == 0) {
+      generateMesh("decreasing", radiation_msg_use_log_);
     }else if (message.compare("all") == 0) {
       const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
       for (const std::string dist_func : distance_functions) {
@@ -303,15 +309,15 @@ namespace voxblox {
     return generateMesh(std::to_string(radiation_distance_function_), radiation_msg_use_log_);
   }
 
-  bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function, const bool use_logarithm){
+  bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function, const bool use_logarithm){ //todo: , const std::string color_map_scheme_name
     std::string log_str = use_logarithm?"log":"no-log";
 
     timing::Timer generate_mesh_timer("mesh/generate");
     char dist_func;
     getDistanceFunctionByName(distance_function, dist_func);
-    std::shared_ptr<ColorMap> color_map;
-    color_map.reset(color_map_.get());
-    setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, radiation_msg_use_log_, radiation_max_distance_, color_map);
+    std::shared_ptr<ColorMap> export_color_map;
+    setColorMapScheme("ironbow", export_color_map);
+    setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, radiation_msg_use_log_, radiation_max_distance_, export_color_map);
 
     Mesh mesh = Mesh(mesh_points_.size(), Point::Zero());
     VertexIndex  mesh_index = 0;
@@ -323,10 +329,10 @@ namespace voxblox {
         float percentage = std::round(float(mesh_index) / num_mesh_points * 1000.0) / 10.0;
         std::cout << "Recoloring (" << distance_function << " function, " << log_str << "): " << percentage << " %     \r" <<std::flush;
       }
-
       const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
       mesh.vertices.push_back(p);
-      mesh.colors.push_back(getColorForVoxelPointer(voxel, color_map, dist_func, use_logarithm));
+      Color c = getColorForVoxelPointer(voxel, export_color_map, dist_func, use_logarithm);
+      mesh.colors.push_back(c);
       //mesh.normals.push_back(Point(0.0, 0.0, 0.0));
       mesh.normals.push_back(p);
       mesh.indices.push_back(mesh_index++);
@@ -335,7 +341,7 @@ namespace voxblox {
     generate_mesh_timer.Stop();
 
     timing::Timer output_mesh_timer("mesh/output");
-    std::cout << "Exporting (" << distance_function << " function, " << log_str << ") ..." <<std::flush;
+    std::cout << "Exporting (" << distance_function << " function, " << log_str << ") ..." <<std::endl;
     time_t raw_time;
     struct tm * time_info;
     char time_buffer[80];
@@ -358,6 +364,7 @@ namespace voxblox {
     }
 
     ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
+
     return true;
   }
 
