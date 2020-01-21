@@ -253,6 +253,8 @@ namespace voxblox {
                       radiation_sensor_value << ">" << radiation_msg_val_max_ << ")");
     }
 
+    ROS_INFO_STREAM("New radiation value: " << radiation_sensor_value);
+
     // Look up transform
     Transformation T_G_C;
     if (!transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_, msg->header.stamp, &T_G_C)) {
@@ -322,25 +324,21 @@ namespace voxblox {
     setColorMapScheme("traffic-light", export_color_map);
     setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, radiation_msg_use_log_, radiation_max_distance_, export_color_map);
 
-    Mesh mesh = Mesh(mesh_points_.size(), Point::Zero());
-    VertexIndex  mesh_index = 0;
-    float num_mesh_points = float(mesh_points_.size());
-
+    Mesh mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
+    convertMeshLayerToMesh(*mesh_layer_, &mesh, true);
+    float num_mesh_points = float(mesh.size());
     // Go over all the blocks in the mesh message.
-    for (Point p : mesh_points_) {
-      if (mesh_index % 10 == 0){
-        float percentage = std::round(float(mesh_index) / num_mesh_points * 1000.0) / 10.0;
+    for (size_t i = 0; i < mesh.size(); i++) {
+      if (i % 10 == 0){
+        float percentage = std::round(float(i) / num_mesh_points * 1000.0) / 10.0;
         std::cout << "Recoloring (" << distance_function << " function, " << log_str << "): " << percentage << " %     \r" <<std::flush;
       }
+      Point p = mesh.vertices[i];
       const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
-      mesh.vertices.push_back(p);
       Color c = getColorForVoxelPointer(voxel, export_color_map, dist_func, use_logarithm);
-      mesh.colors.push_back(c);
-      //mesh.normals.push_back(Point(0.0, 0.0, 0.0));
-      mesh.normals.push_back(p);
-      mesh.indices.push_back(mesh_index++);
+      mesh.colors[i] = c;
     }
-    std::cout << std::endl;
+    std::cout << "Recoloring done.                                                    " << std::endl;
     generate_mesh_timer.Stop();
 
     timing::Timer output_mesh_timer("mesh/output");
