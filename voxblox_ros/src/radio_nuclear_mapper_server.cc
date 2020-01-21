@@ -296,12 +296,14 @@ namespace voxblox {
     }else if (message.compare("decreasing") == 0) {
       generateMesh("decreasing", radiation_msg_use_log_);
     }else if (message.compare("all") == 0) {
+      const bool use_log_or_not [] = {false, true};
       const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
-      for (const std::string dist_func : distance_functions) {
-        generateMesh(dist_func, radiation_msg_use_log_);
+      for (const bool log : use_log_or_not) {
+        for (const std::string dist_func : distance_functions) {
+          generateMesh(dist_func, log);
+        }
       }
     }
-
   }
 
   //TODO
