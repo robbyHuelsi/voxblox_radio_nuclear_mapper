@@ -46,7 +46,6 @@ namespace voxblox {
       std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
       std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
       Mesh radiation_mesh_; //New
-      std::vector<Point> mesh_points_; //New
 
       /// Parameters for radiological nuclear mapper
       std::string radiation_sensor_topic_;

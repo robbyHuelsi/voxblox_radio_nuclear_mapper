@@ -61,8 +61,7 @@ namespace voxblox {
       const Layer<IntensityVoxel>& intensity_layer,
       const std::shared_ptr<ColorMap>& color_map,
       const char dist_func, const bool use_logarithm,
-      voxblox_msgs::Mesh* mesh_msg,
-      std::vector<Point>* mesh_points_) {
+      voxblox_msgs::Mesh* mesh_msg) {
     CHECK_NOTNULL(mesh_msg);
     CHECK(color_map);
 
@@ -109,8 +108,6 @@ namespace voxblox {
             (static_cast<float>(mesh_block.z[vert_idx]) * point_conv_factor +
              static_cast<float>(mesh_block.index[2])) * mesh_msg->block_edge_length;
         Point p = Point(mesh_x, mesh_y, mesh_z);
-
-        mesh_points_->push_back(p);
 
         const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
 

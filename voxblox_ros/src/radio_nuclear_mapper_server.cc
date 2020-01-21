@@ -3,11 +3,6 @@
 #include "voxblox/core/common.h" // TODO
 
 namespace voxblox {
-
-  bool mesh_points_unique_pred(Point a, Point b){
-    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] ? 1 : 0;
-  }
-
   RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh,
                                                      const ros::NodeHandle& nh_private)
       : TsdfServer(nh, nh_private) {
@@ -218,7 +213,7 @@ namespace voxblox {
     // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
                                      radiation_distance_function_, radiation_msg_use_log_,
-                                     &cached_mesh_msg_, &mesh_points_);
+                                     &cached_mesh_msg_);
     // generateMesh(tmp_mesh);
 
     radiation_mesh_pub_.publish(cached_mesh_msg_);
