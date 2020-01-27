@@ -319,7 +319,7 @@ namespace voxblox {
     getDistanceFunctionByName(distance_function, dist_func);
     std::shared_ptr<ColorMap> export_color_map;
     setColorMapScheme("traffic-light", export_color_map);
-    setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, radiation_msg_use_log_, radiation_max_distance_, export_color_map);
+    setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, use_logarithm, radiation_max_distance_, export_color_map);
 
     Mesh mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     convertMeshLayerToMesh(*mesh_layer_, &mesh, true);
