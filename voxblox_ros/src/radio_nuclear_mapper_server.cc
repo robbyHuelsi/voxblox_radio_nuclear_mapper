@@ -9,10 +9,10 @@ namespace voxblox {
 
     cache_mesh_ = true;
 
-    intensity_layer_.reset(new Layer<IntensityVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
+    radiation_layer_.reset(new Layer<IntensityVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
                                                      tsdf_map_->getTsdfLayer().voxels_per_side()));
-    rnm_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
-                                                           intensity_layer_.get()));
+    radiation_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
+                                                                 radiation_layer_.get()));
 
     radiation_mesh_ = Mesh(mesh_layer_->block_size(), Point::Zero()); //TODO: überprüfen, od mesh_layer.block_size() hier richtig ist //New
 
@@ -20,11 +20,11 @@ namespace voxblox {
     getServerConfigFromRosParam(nh_private_);
 
     /// Forward some paramters to integrator
-//    rnm_integrator_->setUseLogarithm(radiation_msg_use_log_);
-//    rnm_integrator_->setRadiationSensorMinValue(radiation_msg_val_min_);  // TODO: Remove
-//    rnm_integrator_->setRadiationSensorMaxValue(radiation_msg_val_max_);  // TODO: Remove
-    rnm_integrator_->setMaxDistance(radiation_max_distance_);
-//    rnm_integrator_->getDistanceFunctionByName(radiation_distance_function_);
+//    radiation_integrator_->setUseLogarithm(radiation_msg_use_log_);
+//    radiation_integrator_->setRadiationSensorMinValue(radiation_msg_val_min_);  // TODO: Remove
+//    radiation_integrator_->setRadiationSensorMaxValue(radiation_msg_val_max_);  // TODO: Remove
+    radiation_integrator_->setMaxDistance(radiation_max_distance_);
+//    radiation_integrator_->getDistanceFunctionByName(radiation_distance_function_);
 
     // todo
     setColorMapMinMax(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_, radiation_msg_use_log_, radiation_max_distance_, color_map_);
@@ -52,7 +52,7 @@ namespace voxblox {
     /// Define pre-sets of parameters
     radiation_sensor_topic_ = "";
     radiation_sensor_frame_id_ = "";
-    radiation_max_distance_ = rnm_integrator_->getMaxDistance();
+    radiation_max_distance_ = radiation_integrator_->getMaxDistance();
     std::string radiation_distance_function_name = "constant";
     radiation_msg_val_min_ = 0.0;
     radiation_msg_val_max_ = 100000.0;
@@ -211,9 +211,9 @@ namespace voxblox {
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
 
     // Mesh tmp_mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
-    recolorVoxbloxMeshMsgByRadioNuclearIntensity(*intensity_layer_, color_map_,
-                                     radiation_distance_function_, radiation_msg_use_log_,
-                                     &cached_mesh_msg_);
+    recolorVoxbloxMeshMsgByRadioNuclearIntensity(*radiation_layer_, color_map_,
+                                                 radiation_distance_function_, radiation_msg_use_log_,
+                                                 &cached_mesh_msg_);
     // generateMesh(tmp_mesh);
 
     radiation_mesh_pub_.publish(cached_mesh_msg_);
@@ -224,7 +224,7 @@ namespace voxblox {
     // Create a pointcloud with radiation = intensity.
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-    createIntensityPointcloudFromIntensityLayer(*intensity_layer_, &pointcloud);
+    createIntensityPointcloudFromIntensityLayer(*radiation_layer_, &pointcloud);
 
     pointcloud.header.frame_id = world_frame_;
     radiation_pointcloud_pub_.publish(pointcloud);
@@ -233,8 +233,8 @@ namespace voxblox {
   }
 
   void RadioNuclearMapperServer::radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg) {
-    CHECK(intensity_layer_);
-    CHECK(rnm_integrator_);
+    CHECK(radiation_layer_);
+    CHECK(radiation_integrator_);
     CHECK(msg);
 
     // Get value from radiation sensor subscriber message
@@ -275,7 +275,7 @@ namespace voxblox {
       }
     }
     // Put this into the integrator.
-    rnm_integrator_->addRadiationSensorValueBearingVectors(
+    radiation_integrator_->addRadiationSensorValueBearingVectors(
         T_G_C.getPosition(), bearing_vectors, radiation_sensor_value);
   }
 
@@ -331,7 +331,7 @@ namespace voxblox {
         std::cout << "Recoloring (" << distance_function << " function, " << log_str << "): " << percentage << " %     \r" <<std::flush;
       }
       Point p = mesh.vertices[i];
-      const IntensityVoxel* voxel = intensity_layer_->getVoxelPtrByCoordinates(p);
+      const IntensityVoxel* voxel = radiation_layer_->getVoxelPtrByCoordinates(p);
       Color c = getColorForVoxelPointer(voxel, export_color_map, dist_func, use_logarithm);
       mesh.colors[i] = c;
     }

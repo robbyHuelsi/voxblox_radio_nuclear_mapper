@@ -1,19 +1,9 @@
 #ifndef VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 #define VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/Image.h>
-#include <memory>
-
-#include <voxblox/core/voxel.h>
-#include <voxblox/integrator/radio_nuclear_mapper_integrator.h>  // TODO
-#include <voxblox/utils/color_maps.h>
-
-#include "voxblox_ros/radio_nuclear_mapper_vis.h"
-//#include "voxblox_ros/intensity_server.h" //TODO
 #include "voxblox_ros/tsdf_server.h"
-
-// radiological nuclear mapper
+#include "voxblox_ros/radio_nuclear_mapper_vis.h"
+#include <voxblox/integrator/radio_nuclear_mapper_integrator.h>  // TODO
 #include <abc_msgs_fkie/MeasurementRaw.h>
 #include <std_msgs/String.h>
 
@@ -26,26 +16,30 @@ namespace voxblox {
       RadioNuclearMapperServer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
       virtual ~RadioNuclearMapperServer() {}
 
+      void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
+
       virtual bool setColorMapScheme(const std::string color_map_scheme_name, std::shared_ptr<ColorMap>& color_map);
       virtual bool getDistanceFunctionByName(const std::string distance_function_name, char& dist_func);
       virtual void setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
                                      const char dist_func, const bool use_logarithm,
                                      const float radiation_max_distance, const std::shared_ptr<ColorMap>& color_map);
 
+      /// Incremental update.
       virtual void updateMesh();
-      virtual void publishPointclouds();
-
-      //TODO
       /// Batch update.
       virtual bool generateMesh();
       virtual bool generateMesh(const std::string& distance_function, const bool use_logarithm);
+      /// Publishes all available pointclouds.
+      virtual void publishPointclouds();
 
     protected:
+
+
       /// Intensity layer, integrator, and color maps, all related to storing
       /// and visualizing intensity data.
-      std::shared_ptr<Layer<IntensityVoxel>> intensity_layer_;
-      std::unique_ptr<RadioNuclearMapperIntegrator> rnm_integrator_;
-      Mesh radiation_mesh_; //New
+      std::shared_ptr<Layer<IntensityVoxel>> radiation_layer_;
+      std::unique_ptr<RadioNuclearMapperIntegrator> radiation_integrator_;
+      Mesh radiation_mesh_; //TODO: Replace with tsdf mesh or remove completely
 
       /// Parameters for radiological nuclear mapper
       std::string radiation_sensor_topic_;
@@ -74,7 +68,6 @@ namespace voxblox {
       /// Subscribe save mesh trigger
       ros::Subscriber save_mesh_trigger_sub_;
 
-      void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
       void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
 
