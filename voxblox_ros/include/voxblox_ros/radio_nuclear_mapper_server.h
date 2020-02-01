@@ -19,10 +19,11 @@ namespace voxblox {
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
 
       virtual bool setColorMapScheme(const std::string color_map_scheme_name, std::shared_ptr<ColorMap>& color_map);
-      virtual bool getDistanceFunctionByName(const std::string distance_function_name, char& dist_func);
-      virtual void setColorMapMinMax(const float radiation_msg_val_min, const float radiation_msg_val_max,
-                                     const char dist_func, const bool use_logarithm,
-                                     const float radiation_max_distance, const std::shared_ptr<ColorMap>& color_map);
+      virtual bool getRadiationDistanceFunctionByName(const std::string distance_function_name, char& dist_func); //TODO: Change char to function pointer
+      virtual void setCMExtrValByMostExtrPossible(const float radiation_msg_val_min, const float radiation_msg_val_max,
+                                                  const char dist_func, const bool use_logarithm,
+                                                  const float radiation_max_distance,
+                                                  const std::shared_ptr<ColorMap>& color_map);
 
       /// Incremental update.
       virtual void updateMesh();
@@ -33,8 +34,6 @@ namespace voxblox {
       virtual void publishPointclouds();
 
     protected:
-
-
       /// Intensity layer, integrator, and color maps, all related to storing
       /// and visualizing intensity data.
       std::shared_ptr<Layer<IntensityVoxel>> radiation_layer_;
@@ -49,30 +48,27 @@ namespace voxblox {
       float radiation_msg_val_min_;
       float radiation_msg_val_max_;
       bool radiation_msg_use_log_;
-      int radiation_ang_res_y_;
+      int radiation_ang_res_y_; //TODO: use euqidistant points
       int radiation_ang_res_z_;
 
       /// Parameters for mesh saving
-      std::string save_mesh_trigger_topic_;
+      std::string save_mesh_trigger_topic_; //TODO: Use tsfd_server procedure for saving?
 
       /// Visualization tools
-      std::shared_ptr<ColorMap> color_map_;
+      std::shared_ptr<ColorMap> color_map_; //TODO: Use tsfd_server variable?
 
       /// Publish markers for visualization.
-      ros::Publisher radiation_pointcloud_pub_;
-      ros::Publisher radiation_mesh_pub_;
+      ros::Publisher radiation_pointcloud_pub_; //TODO: Use tsfd_server publisher?
+      ros::Publisher radiation_mesh_pub_; //TODO: Use tsfd_server publisher?
 
       /// Subscribe radiation intensity
       ros::Subscriber radiation_sensor_sub_;
 
       /// Subscribe save mesh trigger
-      ros::Subscriber save_mesh_trigger_sub_;
+      ros::Subscriber save_mesh_trigger_sub_; //TODO: Use tsfd_server procedure for saving?
 
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
-      void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
-
-
-      //bool mesh_points_unique_pred(Point a, Point b); //TODO
+      void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg); //TODO: Use tsfd_server procedure for saving?
   };
 
 }  // namespace voxblox

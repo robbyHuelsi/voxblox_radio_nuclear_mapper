@@ -9,6 +9,7 @@
 #include "voxblox_ros/conversions.h"
 #include "voxblox_ros/mesh_vis.h"
 
+//todo: cleaning up
 namespace voxblox {
     void calcIntensity(const float sensor_value, const float distance,
                        const char dist_func, const bool use_logarithm, float& intensity) {
@@ -57,7 +58,7 @@ namespace voxblox {
     return c;
   }
 
-  inline void recolorVoxbloxMeshMsgByRadioNuclearIntensity(
+  inline void recolorVoxbloxMeshMsgByRadiationIntensity(
       const Layer<IntensityVoxel>& intensity_layer,
       const std::shared_ptr<ColorMap>& color_map,
       const char dist_func, const bool use_logarithm,

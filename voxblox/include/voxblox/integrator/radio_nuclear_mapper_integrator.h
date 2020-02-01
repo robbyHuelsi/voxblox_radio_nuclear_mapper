@@ -50,7 +50,7 @@ class RadioNuclearMapperIntegrator {
 //  std::vector<std::string> getAllowedDistanceFunctions() const {return allowed_distance_functions_;}
 
 
-//  void getDistanceFunctionByName(const std::string distance_function);
+//  void getRadiationDistanceFunctionByName(const std::string distance_function);
 
   /**
    * Integrates intensities into the intensity layer by projecting normalized
