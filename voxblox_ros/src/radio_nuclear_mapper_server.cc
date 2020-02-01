@@ -44,11 +44,13 @@ namespace voxblox {
 
   void RadioNuclearMapperServer::getServerConfigFromRosParam(
       const ros::NodeHandle& nh_private) {
+    //TODO: Vmtl hat das Überschreiben der Funktion von TsdfServer die Auswirkung, dass dort die Parameter nicht gesetzt werden und deshalb das Mesh nicht wie gewünscht aussieht
+
     /// Define pre-sets of parameters
     radiation_sensor_topic_ = "";
     radiation_sensor_frame_id_ = "";
     radiation_max_distance_ = radiation_integrator_->getMaxDistance();
-    std::string radiation_distance_function_name = "constant";
+    radiation_distance_function_name_ = "constant";
     radiation_msg_val_min_ = 0.0;
     radiation_msg_val_max_ = 100000.0;
     radiation_msg_use_log_ = false;
@@ -64,7 +66,7 @@ namespace voxblox {
                                   radiation_sensor_frame_id_, radiation_sensor_frame_id_);
     nh_private.param("radiation_max_distance", radiation_max_distance_, radiation_max_distance_);
     nh_private.param<std::string>("radiation_distance_function",
-                                  radiation_distance_function_name, radiation_distance_function_name);
+                                  radiation_distance_function_name_, radiation_distance_function_name_);
     nh_private.param("radiation_msg_val_min", radiation_msg_val_min_, radiation_msg_val_min_);
     nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
     nh_private.param("radiation_msg_use_log", radiation_msg_use_log_, radiation_msg_use_log_);
@@ -103,7 +105,7 @@ namespace voxblox {
     }
 
     /// Check parameter validity for distance parameters and print it //todo
-    getRadiationDistanceFunctionByName(radiation_distance_function_name, radiation_distance_function_);
+    getRadiationDistanceFunctionByName(radiation_distance_function_name_, radiation_distance_function_);
 
     /// Print resolution parameters
     ROS_INFO_STREAM("Radiation angular resolution: " <<
@@ -151,12 +153,12 @@ namespace voxblox {
   }
 
   bool RadioNuclearMapperServer::getRadiationDistanceFunctionByName(const std::string distance_function_name,
-                                                                    char& dist_func){
+                                                                    RDFType& rad_dist_func){
     //TODO: Comments (after replacing char with function pointer)
     /// Check if the incoming string is allowed
     std::vector<std::string> allowed_funcs = {"increasing", "decreasing", "constant"};
     if(std::find(allowed_funcs.begin(), allowed_funcs.end(), distance_function_name) == allowed_funcs.end()){
-      dist_func = 'z';
+      rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_zero;
       // Distance function string is not allowed
       ROS_ERROR("Radiation distance function is called by a not supported string.");
       std::stringstream allowed_funcs_ss = std::stringstream();
@@ -168,11 +170,11 @@ namespace voxblox {
       return false;
     }else{
       if (distance_function_name == "increasing" or distance_function_name == "i"){
-        dist_func = 'i';
+        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_increasing;
       }else if (distance_function_name == "decreasing" or distance_function_name == "d"){
-        dist_func = 'd';
+        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_decreasing;
       }else if (distance_function_name == "constant" or distance_function_name == "c"){
-        dist_func = 'c';
+        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_constant;
       }
       ROS_INFO_STREAM("Radiation will map in a radius of " << radiation_max_distance_ <<
                       " meters with the distance function '" << distance_function_name << "'.");
@@ -190,7 +192,8 @@ namespace voxblox {
    */
   void RadioNuclearMapperServer::setCMExtrValByMostExtrPossible(const float radiation_msg_val_min,
                                                                 const float radiation_msg_val_max,
-                                                                const char dist_func, const bool use_logarithm,
+                                                                RDFType& rad_dist_func,
+                                                                const bool use_logarithm,
                                                                 const float radiation_max_distance,
                                                                 const std::shared_ptr<ColorMap>& color_map){
     /// Combine values and put them into a vector
@@ -200,7 +203,7 @@ namespace voxblox {
     float tmp_intensity;
     for(float ex_val: radiation_msg_extreme_values){
       for(float dist: distance_extreme_values){
-        calcIntensity(ex_val, dist, dist_func, use_logarithm, tmp_intensity);
+        calcIntensity(ex_val, dist, rad_dist_func, use_logarithm, tmp_intensity);
         intensity_extreme_values.insert(intensity_extreme_values.end(), 1, tmp_intensity);
       }
     }
@@ -215,13 +218,119 @@ namespace voxblox {
     ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
   }
 
+  inline void RadioNuclearMapperServer::calcIntensity(const float sensor_value, const float distance,
+                                               RDFType& rad_dist_func, const bool use_logarithm, float& intensity) {
+    intensity = sensor_value;
+
+    /// Apply the desired radiation distance function
+    /// Looks crazy, but it works (https://stackoverflow.com/a/1486279)
+    (*this.*rad_dist_func)(intensity, distance);
+
+    /// Use logarithmic mapping if needed
+    if(use_logarithm){
+      intensity = log(intensity);
+      intensity = intensity < 0.0 ? 0.0 : intensity;  // TODO: Comment
+    }
+  }
+
+  // TODO: Continue tidy up here
+  inline Color RadioNuclearMapperServer::getColorForVoxelPointer(const IntensityVoxel* voxel,
+                                                          const std::shared_ptr<ColorMap>& color_map,
+                                                          RDFType& rad_dist_func, const bool use_logarithm){
+    Color c;
+    if (voxel != nullptr && voxel->weight < std::numeric_limits<float>::infinity()) { // && 1.0 / voxel->weight > 0.0
+      float intensity;
+      calcIntensity(voxel->intensity, voxel->weight, rad_dist_func, use_logarithm, intensity);
+      //printf("Intensity: %f", intensity);
+//          std::cout << "Intensity: " << intensity << std::endl;
+      c = color_map->colorLookup(intensity);
+
+    } else {
+//      c = color_map->colorLookup(0.0);
+      c = Color(0.0, 0.0, 0.0, 0.0);
+    }
+    return c;
+  }
+
+  inline void RadioNuclearMapperServer::recolorVoxbloxMeshMsgByRadiationIntensity(
+      const Layer<IntensityVoxel>& intensity_layer,
+      const std::shared_ptr<ColorMap>& color_map,
+      RDFType& rad_dist_func, const bool use_logarithm, //TODO: Use Pointer
+      voxblox_msgs::Mesh* mesh_msg) {
+    CHECK_NOTNULL(mesh_msg);
+    CHECK(color_map);
+
+/*  size_t vps = intensity_layer.voxels_per_side();
+  size_t nps = vps * vps * vps;
+
+  BlockIndexList blocks;
+  intensity_layer.getAllAllocatedBlocks(&blocks);
+ for (const BlockIndex& index : blocks){
+    const Block<IntensityVoxel>& block = intensity_layer.getBlockByIndex(index);
+    for (size_t linear_index = 0; linear_index < nps; ++linear_index) {
+      Point coord = block.computeCoordinatesFromLinearIndex(linear_index);
+      // std::cout << "Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
+      const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(coord);
+      if (voxel != nullptr) {
+        //std::cout << "Voxel intensity: " << voxel->intensity << std::endl;
+        std::cout << "Block: x: " << coord.x() << "; y: " << coord.y() << "; z: " << coord.z() << std::endl;
+      }
+    }
+  }*/
+
+    // Go over all the blocks in the mesh message.
+    for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
+      // Look up verticies in the thermal layer.
+      for (size_t vert_idx = 0u; vert_idx < mesh_block.x.size(); ++vert_idx) {
+
+        // only needed if color information was originally missing
+/*      mesh_block.r.resize(mesh_block.x.size());
+      mesh_block.g.resize(mesh_block.x.size());
+      mesh_block.b.resize(mesh_block.x.size());
+
+      const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(
+          Point(mesh_block.x[vert_idx], mesh_block.y[vert_idx],
+                mesh_block.z[vert_idx]));*/
+
+        constexpr float point_conv_factor = 2.0f / std::numeric_limits<uint16_t>::max();
+        const float mesh_x =
+            (static_cast<float>(mesh_block.x[vert_idx]) * point_conv_factor +
+             static_cast<float>(mesh_block.index[0])) * mesh_msg->block_edge_length;
+        const float mesh_y =
+            (static_cast<float>(mesh_block.y[vert_idx]) * point_conv_factor +
+             static_cast<float>(mesh_block.index[1])) * mesh_msg->block_edge_length;
+        const float mesh_z =
+            (static_cast<float>(mesh_block.z[vert_idx]) * point_conv_factor +
+             static_cast<float>(mesh_block.index[2])) * mesh_msg->block_edge_length;
+        Point p = Point(mesh_x, mesh_y, mesh_z);
+
+        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
+
+        //std::cout << "Voxel: x: " << mesh_x << std::endl;
+//        std::cout << "Voxel: X: " << mesh_x << "; y: " << mesh_y << "; z: " << mesh_z << std::endl;
+
+//        if (voxel == nullptr) {
+//          //printf("voxel is null pointer!");
+//        } else if (voxel->weight <= 0.0) {
+////          std::cout << "weight too small" << std::endl;
+//        }
+
+        Color c = getColorForVoxelPointer(voxel, color_map, rad_dist_func, use_logarithm);
+
+        //Update mesh message color
+        mesh_block.r[vert_idx] = c.r;
+        mesh_block.g[vert_idx] = c.g;
+        mesh_block.b[vert_idx] = c.b;
+      }
+    }
+  }
+
   void RadioNuclearMapperServer::updateMesh() {
     TsdfServer::updateMesh(); // TODO: Rewrite here and remove?
 
     // Now recolor the mesh...
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
-    recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, color_map_,
-                                              radiation_distance_function_, radiation_msg_use_log_,
+    recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, color_map_, radiation_distance_function_, radiation_msg_use_log_,
                                               &cached_mesh_msg_);
     // generateMesh(tmp_mesh);
 
@@ -230,7 +339,7 @@ namespace voxblox {
   }
 
   bool RadioNuclearMapperServer::generateMesh() {
-    return generateMesh(std::to_string(radiation_distance_function_), radiation_msg_use_log_);
+    return generateMesh(radiation_distance_function_name_, radiation_msg_use_log_);
   }
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function,
@@ -238,11 +347,11 @@ namespace voxblox {
     std::string log_str = use_logarithm?"log":"no-log";
 
     timing::Timer generate_mesh_timer("mesh/generate");
-    char dist_func;
-    getRadiationDistanceFunctionByName(distance_function, dist_func);
+    RDFType rad_dist_func;
+    getRadiationDistanceFunctionByName(distance_function, rad_dist_func);
     std::shared_ptr<ColorMap> export_color_map;
     setColorMapScheme("traffic-light", export_color_map);
-    setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, dist_func, use_logarithm,
+    setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
                                    radiation_max_distance_, export_color_map);
 
     Mesh mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
@@ -256,7 +365,7 @@ namespace voxblox {
       }
       Point p = mesh.vertices[i];
       const IntensityVoxel* voxel = radiation_layer_->getVoxelPtrByCoordinates(p);
-      Color c = getColorForVoxelPointer(voxel, export_color_map, dist_func, use_logarithm);
+      Color c = getColorForVoxelPointer(voxel, export_color_map, rad_dist_func, use_logarithm);
       mesh.colors[i] = c;
     }
     std::cout << "Recoloring done.                                                    " << std::endl;
@@ -374,6 +483,28 @@ namespace voxblox {
         }
       }
     }
+  }
+
+  void RadioNuclearMapperServer::rad_dist_func_increasing(float& intensity, const float& distance){
+    intensity = intensity * pow(distance + 1.0, 2);
+//    printf("increasing\n");
+  }
+
+  void RadioNuclearMapperServer::rad_dist_func_decreasing(float& intensity, const float& distance){
+    intensity = intensity / pow(distance + 1.0, 2);
+//    printf("decreasing\n");
+  }
+
+  void RadioNuclearMapperServer::rad_dist_func_constant(float& intensity, const float& distance){
+    (void)intensity; // To silence compiler (intensity = intensity)
+    (void)distance;  // To silence compiler
+//    printf("constant\n");
+  }
+
+  void RadioNuclearMapperServer::rad_dist_func_zero(float& intensity, const float& distance){
+    intensity = 0.0;
+    (void)distance; //To silence compiler
+//    printf("zero\n");
   }
 
 }  // namespace voxblox
