@@ -58,6 +58,7 @@ namespace voxblox {
       bool radiation_msg_use_log_;
       int radiation_ang_res_y_; //TODO: use euqidistant points
       int radiation_ang_res_z_;
+      size_t radSenCallbackCounter;
 
       /// Parameters for mesh saving
       std::string save_mesh_trigger_topic_; //TODO: Use tsfd_server procedure for saving?

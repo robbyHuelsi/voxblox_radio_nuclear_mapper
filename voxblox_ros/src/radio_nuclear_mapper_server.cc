@@ -34,6 +34,7 @@ namespace voxblox {
         nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
     /// Subscribe radiation intensity
+    radSenCallbackCounter = 0;
     radiation_sensor_sub_ = nh_private_.subscribe(
         radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
 
@@ -416,6 +417,8 @@ namespace voxblox {
     CHECK(radiation_integrator_);
     CHECK(msg);
 
+    size_t currCout = radSenCallbackCounter++;
+
     // Get value from radiation sensor subscriber message
     float radiation_sensor_value = (float)msg->value;
     if (radiation_sensor_value < radiation_msg_val_min_) {
@@ -427,18 +430,26 @@ namespace voxblox {
                       radiation_sensor_value << ">" << radiation_msg_val_max_ << ")");
     }
 
-    ROS_INFO_STREAM("New radiation value: " << radiation_sensor_value);
+    ROS_INFO_STREAM(currCout << ": New radiation value: " << radiation_sensor_value);
 
     // Look up transform
     Transformation T_G_C;
-    if (!transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_, msg->header.stamp, &T_G_C)) {
-      ROS_WARN_THROTTLE(10, "Failed to look up intensity transform!");
+//    ros::Time t = ; //msg->header.stamp
+    if (!transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
+                                     ros::Time(0, 0), // To get latest positions
+                                      &T_G_C)) {
+      ROS_WARN_STREAM(currCout << ": Failed to look up intensity transform!");
+//      ROS_WARN_THROTTLE(10, "Failed to look up intensity transform!");
       return;
     }
+
+//    ROS_INFO_STREAM(currCout << ": Before bearing_vectors...");
 
     // Pre-allocate the bearing vectors and intensities.
     Pointcloud bearing_vectors;
     bearing_vectors.reserve(radiation_ang_res_z_ * radiation_ang_res_y_ + 1);
+
+//    ROS_INFO_STREAM(currCout << ": Before loop...");
 
     for (int i = 0; i < radiation_ang_res_y_; i++) {
       float beta = (float)i / (float)radiation_ang_res_y_ * 2.0 * M_PI;
@@ -453,9 +464,14 @@ namespace voxblox {
         bearing_vectors.push_back(bearing_vector); // .normalized()
       }
     }
+
+//    ROS_INFO_STREAM(currCout << ": Before integrator...");
+
     // Put this into the integrator.
     radiation_integrator_->addRadiationSensorValueBearingVectors(
         T_G_C.getPosition(), bearing_vectors, radiation_sensor_value);
+
+    ROS_INFO_STREAM(currCout << ": Done.");
   }
 
   void RadioNuclearMapperServer::saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg){
