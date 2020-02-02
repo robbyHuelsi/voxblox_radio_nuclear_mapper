@@ -46,8 +46,7 @@ namespace voxblox {
         save_mesh_trigger_topic_, 1, &RadioNuclearMapperServer::saveMeshTriggerCallback, this);
   }
 
-  void RadioNuclearMapperServer::getServerConfigFromRosParam(
-      const ros::NodeHandle& nh_private) {
+  void RadioNuclearMapperServer::getServerConfigFromRosParam(const ros::NodeHandle& nh_private) {
     //TODO: Vmtl hat das Überschreiben der Funktion von TsdfServer die Auswirkung, dass dort die Parameter nicht gesetzt werden und deshalb das Mesh nicht wie gewünscht aussieht
 
     /// Define pre-sets of parameters
@@ -273,7 +272,7 @@ namespace voxblox {
                                                           const std::shared_ptr<ColorMap>& color_map,
                                                           RDFType& rad_dist_func, const bool use_logarithm){
     Color c;
-    if (voxel != nullptr && voxel->weight < std::numeric_limits<float>::infinity()) { // && 1.0 / voxel->weight > 0.0
+    if (voxel != nullptr) { // && 1.0 / voxel->weight > 0.0 // && voxel->weight < std::numeric_limits<float>::infinity()
       float intensity;
       calcIntensity(voxel->intensity, voxel->weight, rad_dist_func, use_logarithm, intensity);
       //printf("Intensity: %f", intensity);
