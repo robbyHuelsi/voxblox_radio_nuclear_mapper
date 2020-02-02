@@ -20,15 +20,6 @@ namespace voxblox {
 
       /// handling with parameters
       void getServerConfigFromRosParam(const ros::NodeHandle& nh_private);
-      virtual bool setColorMapScheme(const std::string color_map_scheme_name, std::shared_ptr<ColorMap>& color_map);
-      virtual bool getRadiationDistanceFunctionByName(const std::string distance_function_name,
-                                                      RDFType& rad_dist_func);
-      virtual void setCMExtrValByMostExtrPossible(const float radiation_msg_val_min,
-                                                  const float radiation_msg_val_max,
-                                                  RDFType& rad_dist_func,
-                                                  const bool use_logarithm,
-                                                  const float radiation_max_distance,
-                                                  const std::shared_ptr<ColorMap>& color_map);
 
       /// Incremental update.
       virtual void updateMesh();
@@ -56,9 +47,9 @@ namespace voxblox {
       float radiation_msg_val_min_;
       float radiation_msg_val_max_;
       bool radiation_msg_use_log_;
-      int radiation_ang_res_y_; //TODO: use euqidistant points
-      int radiation_ang_res_z_;
-      size_t radSenCallbackCounter;
+      int radiation_bearing_vector_num_; //TODO: use euqidistant points
+      Pointcloud bearing_vectors_;
+      size_t rad_sen_callback_counter_;
 
       /// Parameters for mesh saving
       std::string save_mesh_trigger_topic_; //TODO: Use tsfd_server procedure for saving?
@@ -75,6 +66,19 @@ namespace voxblox {
 
       /// Subscribe save mesh trigger
       ros::Subscriber save_mesh_trigger_sub_; //TODO: Use tsfd_server procedure for saving?
+
+      /// handling with parameters
+      bool setColorMapScheme(const std::string color_map_scheme_name, std::shared_ptr<ColorMap>& color_map);
+      bool getRadiationDistanceFunctionByName(const std::string distance_function_name,
+                                              RDFType& rad_dist_func);
+      void setCMExtrValByMostExtrPossible(const float radiation_msg_val_min,
+                                          const float radiation_msg_val_max,
+                                          RDFType& rad_dist_func,
+                                          const bool use_logarithm,
+                                          const float radiation_max_distance,
+                                          const std::shared_ptr<ColorMap>& color_map);
+
+      void generateBearingVectors(const int n, Pointcloud& bearing_vectors);
 
       void calcIntensity(const float sensor_value, const float distance,
                          RDFType& rad_dist_func, const bool use_logarithm, float& intensity);

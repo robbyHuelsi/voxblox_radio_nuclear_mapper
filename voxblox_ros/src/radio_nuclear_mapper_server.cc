@@ -26,6 +26,9 @@ namespace voxblox {
     setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_,
                                    radiation_msg_use_log_, radiation_max_distance_, color_map_);
 
+    /// Generate BEaring Vectors //TODO: add comment
+    generateBearingVectors(radiation_bearing_vector_num_, bearing_vectors_);
+
     /// Publishers for output.
     radiation_pointcloud_pub_ =
         nh_private_.advertise<pcl::PointCloud<pcl::PointXYZI> >(
@@ -34,7 +37,7 @@ namespace voxblox {
         nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
     /// Subscribe radiation intensity
-    radSenCallbackCounter = 0;
+    rad_sen_callback_counter_ = 0;
     radiation_sensor_sub_ = nh_private_.subscribe(
         radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
 
@@ -55,8 +58,7 @@ namespace voxblox {
     radiation_msg_val_min_ = 0.0;
     radiation_msg_val_max_ = 100000.0;
     radiation_msg_use_log_ = false;
-    radiation_ang_res_y_ = 100;
-    radiation_ang_res_z_ = 100;
+    radiation_bearing_vector_num_ = 100;
     std::string color_map_scheme_name = "ironbow";
     save_mesh_trigger_topic_ = "";
 
@@ -71,8 +73,8 @@ namespace voxblox {
     nh_private.param("radiation_msg_val_min", radiation_msg_val_min_, radiation_msg_val_min_);
     nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
     nh_private.param("radiation_msg_use_log", radiation_msg_use_log_, radiation_msg_use_log_);
-    nh_private.param("radiation_ang_res_y_", radiation_ang_res_y_, radiation_ang_res_y_);
-    nh_private.param("radiation_ang_res_z_", radiation_ang_res_z_, radiation_ang_res_z_);
+    nh_private.param("radiation_bearing_vector_num",
+                     radiation_bearing_vector_num_, radiation_bearing_vector_num_);
     nh_private.param("radiation_colormap", color_map_scheme_name, color_map_scheme_name);
     nh_private.param<std::string>("save_mesh_trigger_topic",
                                   save_mesh_trigger_topic_, save_mesh_trigger_topic_);
@@ -109,8 +111,7 @@ namespace voxblox {
     getRadiationDistanceFunctionByName(radiation_distance_function_name_, radiation_distance_function_);
 
     /// Print resolution parameters
-    ROS_INFO_STREAM("Radiation angular resolution: " <<
-                    "(y=" << radiation_ang_res_y_ << "; z=" << radiation_ang_res_z_ << ")");
+    ROS_INFO_STREAM("Number of bearing vectors: " << radiation_bearing_vector_num_);
 
     /// Check parameter validity for save mesh trigger parameter and print it
     if(!save_mesh_trigger_topic_.empty()){
@@ -217,6 +218,39 @@ namespace voxblox {
 
     //Print extreme values
     ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
+  }
+
+  void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& bearing_vectors) {
+    /// Idea from "A New Computationally Effifficient Method for Spacing n Points on a Sphere"
+    /// by Jonathan Kogan, Columbia Grammar and Preparatory School, New York
+    /// https://scholar.rose-hulman.edu/cgi/viewcontent.cgi?article=1387&context=rhumj
+
+    ROS_INFO_STREAM("Generating bearing vectors..." << std::flush);
+
+    double wtf = 0.1 + 1.2 * n;  //TODO: Rename variables
+    double start = (-1.0 + 1.0 / (n - 1.0));
+    double increment = (2.0 - 2.0 / (n - 1.0)) / (n - 1.0);
+    
+    bearing_vectors.clear();
+    bearing_vectors.reserve(n);
+    double s, phi, theta, x, y, z;
+
+    std::stringstream vec_ss;
+    vec_ss << "[";
+    for (int j = 0; j < n; j++) {
+      s = start + (double)j * increment;
+      phi = s * wtf;
+      theta = M_PI / 2.0 * copysign(1, s) * (1.0 - sqrt(1.0 - abs(s)));
+      x = cos(phi) * cos(theta);
+      y = sin(phi) * cos(theta);
+      z = sin(theta);
+      bearing_vectors.push_back(Point(x, y, z));
+      vec_ss << "(" << x << "," << y << "," << z << (j == n-1?")":"),");
+    }
+    vec_ss << "]";
+
+    std::cout <<" Done." << std::endl;
+//    ROS_INFO_STREAM(vec_ss.str() << std::endl);
   }
 
   inline void RadioNuclearMapperServer::calcIntensity(const float sensor_value, const float distance,
@@ -417,7 +451,7 @@ namespace voxblox {
     CHECK(radiation_integrator_);
     CHECK(msg);
 
-    size_t currCout = radSenCallbackCounter++;
+    size_t currCout = rad_sen_callback_counter_++;
 
     // Get value from radiation sensor subscriber message
     float radiation_sensor_value = (float)msg->value;
@@ -446,30 +480,27 @@ namespace voxblox {
 //    ROS_INFO_STREAM(currCout << ": Before bearing_vectors...");
 
     // Pre-allocate the bearing vectors and intensities.
-    Pointcloud bearing_vectors;
-    bearing_vectors.reserve(radiation_ang_res_z_ * radiation_ang_res_y_ + 1);
-
-//    ROS_INFO_STREAM(currCout << ": Before loop...");
-
-    for (int i = 0; i < radiation_ang_res_y_; i++) {
-      float beta = (float)i / (float)radiation_ang_res_y_ * 2.0 * M_PI;
-      for (int j = 0; j < radiation_ang_res_z_; j++) {
-        float gamma = (float)j / (float)radiation_ang_res_z_ * 2.0 * M_PI;
-
-        //  |  cos(c) -sin(c)    0    |   |  cos(b)    0     sin(b) |   | 1 |   | cos(b) * cos(c) |
-        //  |  sin(c)  cos(c)    0    | * |    0       1       0    | * | 0 | = | cos(b) * sin(c) |
-        //  |    0       0       1    |   | -sin(b)    0     cos(b) |   | 0 |   |     -sin(b)     |
-
-        Ray bearing_vector = Point(cos(beta) * cos(gamma), cos(beta) * sin(gamma), -sin(beta));
-        bearing_vectors.push_back(bearing_vector); // .normalized()
-      }
-    }
+//    Pointcloud bearing_vectors;
+//    bearing_vectors.reserve(radiation_ang_res_z_ * radiation_ang_res_y_ + 1);
+//    for (int i = 0; i < radiation_ang_res_y_; i++) {
+//      float beta = (float)i / (float)radiation_ang_res_y_ * 2.0 * M_PI;
+//      for (int j = 0; j < radiation_ang_res_z_; j++) {
+//        float gamma = (float)j / (float)radiation_ang_res_z_ * 2.0 * M_PI;
+//
+//        //  |  cos(c) -sin(c)    0    |   |  cos(b)    0     sin(b) |   | 1 |   | cos(b) * cos(c) |
+//        //  |  sin(c)  cos(c)    0    | * |    0       1       0    | * | 0 | = | cos(b) * sin(c) |
+//        //  |    0       0       1    |   | -sin(b)    0     cos(b) |   | 0 |   |     -sin(b)     |
+//
+//        Ray bearing_vector = Point(cos(beta) * cos(gamma), cos(beta) * sin(gamma), -sin(beta));
+//        bearing_vectors.push_back(bearing_vector); // .normalized()
+//      }
+//    }
 
 //    ROS_INFO_STREAM(currCout << ": Before integrator...");
 
     // Put this into the integrator.
     radiation_integrator_->addRadiationSensorValueBearingVectors(
-        T_G_C.getPosition(), bearing_vectors, radiation_sensor_value);
+        T_G_C.getPosition(), bearing_vectors_, radiation_sensor_value);
 
     ROS_INFO_STREAM(currCout << ": Done.");
   }
