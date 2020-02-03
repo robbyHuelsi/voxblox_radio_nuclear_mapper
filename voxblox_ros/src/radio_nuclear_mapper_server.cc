@@ -73,7 +73,8 @@ namespace voxblox {
     nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
     nh_private.param("radiation_bearing_vector_num",
                      radiation_bearing_vector_num_, radiation_bearing_vector_num_);
-    nh_private.param("radiation_colormap", radiation_color_map_scheme_name_, radiation_color_map_scheme_name_);
+    nh_private.param("radiation_colormap",
+                     radiation_color_map_scheme_name_, radiation_color_map_scheme_name_);
     nh_private.param<std::string>("save_mesh_trigger_topic",
                                   save_mesh_trigger_topic_, save_mesh_trigger_topic_);
 
@@ -105,8 +106,9 @@ namespace voxblox {
                       ", " << log(radiation_msg_val_max_) << "]");
     }
 
-    /// Check parameter validity for distance parameters and print it //todo
-    getRadiationDistanceFunctionByName(radiation_distance_function_name_, radiation_distance_function_);
+    /// Set radiation distance function by name as string
+    getRadiationDistanceFunctionByName(radiation_distance_function_name_,
+                                       radiation_distance_function_);
 
     /// Print resolution parameters
     ROS_INFO_STREAM("Number of bearing vectors: " << radiation_bearing_vector_num_);
@@ -117,28 +119,28 @@ namespace voxblox {
     }
   }
 
-  bool RadioNuclearMapperServer::setColorMapScheme(const std::string color_map_scheme_name,
+  bool RadioNuclearMapperServer::setColorMapScheme(const std::string& color_map_scheme_name,
                                                    std::shared_ptr<ColorMap>& color_map){
     /// Try to select color map scheme by incomming string (this block was mainly copied from tsdf_server.cc)
     bool color_map_scheme_valid = false;
     if (color_map_scheme_name == "rainbow") {
       color_map.reset(new RainbowColorMap());
-      color_map_scheme_valid = true; // RH
+      color_map_scheme_valid = true; /// RH
     } else if (color_map_scheme_name == "inverse_rainbow") {
       color_map.reset(new InverseRainbowColorMap());
-      color_map_scheme_valid = true; // RH
+      color_map_scheme_valid = true; /// RH
     } else if (color_map_scheme_name == "grayscale") {
       color_map.reset(new GrayscaleColorMap());
-      color_map_scheme_valid = true; // RH
+      color_map_scheme_valid = true; /// RH
     } else if (color_map_scheme_name == "inverse_grayscale") {
       color_map.reset(new InverseGrayscaleColorMap());
-      color_map_scheme_valid = true; // RH
+      color_map_scheme_valid = true; /// RH
     } else if (color_map_scheme_name == "ironbow") {
       color_map.reset(new IronbowColorMap());
-      color_map_scheme_valid = true; // RH
-    } else if (color_map_scheme_name == "traffic-light") { // RH
-      color_map.reset(new TrafficLightColorMap()); // RH
-      color_map_scheme_valid = true; // RH
+      color_map_scheme_valid = true; /// RH
+    } else if (color_map_scheme_name == "traffic-light") { /// RH
+      color_map.reset(new TrafficLightColorMap()); /// RH
+      color_map_scheme_valid = true; /// RH
     }
 
     /// Print hints
@@ -152,7 +154,7 @@ namespace voxblox {
     return color_map_scheme_valid;
   }
 
-  bool RadioNuclearMapperServer::getRadiationDistanceFunctionByName(const std::string distance_function_name,
+  bool RadioNuclearMapperServer::getRadiationDistanceFunctionByName(const std::string& distance_function_name,
                                                                     RDFType& rad_dist_func){
     /// Check if the incoming string is allowed
     std::vector<std::string> allowed_funcs = {"increasing", "decreasing", "constant"};
@@ -328,7 +330,7 @@ namespace voxblox {
 
   void RadioNuclearMapperServer::updateMesh() {
     /// Run updateMesh() of parent class TsdfServer
-    TsdfServer::updateMesh(); // TODO: Rewrite here and remove?
+    TsdfServer::updateMesh();
 
     /// Use updated mesh, recolor and update it
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
@@ -340,6 +342,7 @@ namespace voxblox {
   }
 
   bool RadioNuclearMapperServer::generateMesh() {
+    /// Apply generateMesh() with preset parameters
     return generateMesh(radiation_distance_function_name_, radiation_use_logarithm_, radiation_color_map_scheme_name_);
   }
 
@@ -524,7 +527,7 @@ namespace voxblox {
    * @return
    */
   float RadioNuclearMapperServer::rad_dist_func_constant(const float distance){
-    (void)distance;  // To silence compiler
+    (void)distance;  /// To silence compiler
     return 1.0;
   }
 
@@ -534,8 +537,8 @@ namespace voxblox {
    * @return
    */
   float RadioNuclearMapperServer::rad_dist_func_infinity(const float distance){
-    (void)distance; //To silence compiler
+    (void)distance; /// To silence compiler
     return std::numeric_limits<float>::infinity();
   }
 
-}  // namespace voxblox
+}  /// namespace voxblox
