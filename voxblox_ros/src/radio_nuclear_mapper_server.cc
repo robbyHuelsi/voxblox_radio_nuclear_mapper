@@ -1,5 +1,10 @@
 #include "voxblox_ros/radio_nuclear_mapper_server.h"
 
+/// The code in class RadioNuclearMapperServer comes from class IntensityServer
+/// and has been adapted for the special purpose.
+/// New variables or methods are marked with the comment "RH" (Robert Hülsmann) IN HEADER FILE.
+/// IN ADDITION, new lines of code in adopted methods are marked in the same way IN THIS FILE.
+
 namespace voxblox {
   RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh,
                                                      const ros::NodeHandle& nh_private)
@@ -12,17 +17,17 @@ namespace voxblox {
     radiation_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
                                                                  radiation_layer_.get()));
 
-    /// Get ROS params for radiation sensor
+    /// Get ROS params for radiation sensor (RH)
     getServerConfigFromRosParam(nh_private_);
 
-    /// Forward some paramters to integrator
+    /// Forward some paramters to integrator (RH)
     radiation_integrator_->setMaxDistance(radiation_max_distance_);
 
-    /// Set min and max value for color map
+    /// Set min and max value for color map (RH)
     setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_,
-                                   radiation_msg_use_log_, radiation_max_distance_, color_map_);
+                                   radiation_use_logarithm_, radiation_max_distance_, radiation_color_map_);
 
-    /// Generate Bearing Vectors to project radiation intensity onto voxels
+    /// Generate Bearing Vectors to project radiation intensity onto voxels (RH)
     generateBearingVectors(radiation_bearing_vector_num_, bearing_vectors_);
 
     /// Publishers for output
@@ -32,12 +37,12 @@ namespace voxblox {
     radiation_mesh_pub_ =
         nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
-    /// Subscribe radiation intensity
+    /// Subscribe radiation intensity (whole block: RH)
     rad_sen_callback_counter_ = 0;
     radiation_sensor_sub_ = nh_private_.subscribe(
         radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
 
-    /// Subscribe save mesh trigger
+    /// Subscribe save mesh trigger (RH)
     save_mesh_trigger_sub_ = nh_private_.subscribe(
         save_mesh_trigger_topic_, 1, &RadioNuclearMapperServer::saveMeshTriggerCallback, this);
   }
@@ -50,8 +55,8 @@ namespace voxblox {
     radiation_distance_function_name_ = "constant";
     radiation_msg_val_min_ = 0.0;
     radiation_msg_val_max_ = 100000.0;
-    radiation_msg_use_log_ = false;
-    radiation_bearing_vector_num_ = 100;
+    radiation_use_logarithm_ = false;
+    radiation_bearing_vector_num_ = 10000;
     std::string color_map_scheme_name = "ironbow";
     save_mesh_trigger_topic_ = "";
 
@@ -63,9 +68,9 @@ namespace voxblox {
     nh_private.param("radiation_max_distance", radiation_max_distance_, radiation_max_distance_);
     nh_private.param<std::string>("radiation_distance_function",
                                   radiation_distance_function_name_, radiation_distance_function_name_);
+    nh_private.param("radiation_use_logarithm", radiation_use_logarithm_, radiation_use_logarithm_);
     nh_private.param("radiation_msg_val_min", radiation_msg_val_min_, radiation_msg_val_min_);
     nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
-    nh_private.param("radiation_msg_use_log", radiation_msg_use_log_, radiation_msg_use_log_);
     nh_private.param("radiation_bearing_vector_num",
                      radiation_bearing_vector_num_, radiation_bearing_vector_num_);
     nh_private.param("radiation_colormap", color_map_scheme_name, color_map_scheme_name);
@@ -89,12 +94,12 @@ namespace voxblox {
     }
 
     /// Set color map by given color scheme
-    setColorMapScheme(color_map_scheme_name, color_map_);
+    setColorMapScheme(color_map_scheme_name, radiation_color_map_);
 
     /// Print message value parameters and make it logarithmic if needed
     ROS_INFO_STREAM("Radiation sensor value range (w/o logarithm): [" <<
                     radiation_msg_val_min_ << ", " << radiation_msg_val_max_ << "]");
-    if(radiation_msg_use_log_){
+    if(radiation_use_logarithm_){
       ROS_INFO_STREAM("Radiation sensor value range (with logarithm): " <<
                       "[" << (log(radiation_msg_val_min_) < 0.0 ? 0.0 : log(radiation_msg_val_min_)) <<
                       ", " << log(radiation_msg_val_max_) << "]");
@@ -114,26 +119,26 @@ namespace voxblox {
 
   bool RadioNuclearMapperServer::setColorMapScheme(const std::string color_map_scheme_name,
                                                    std::shared_ptr<ColorMap>& color_map){
-    /// Try to select color map scheme by incomming string
+    /// Try to select color map scheme by incomming string (this block was mainly copied from tsdf_server.cc)
     bool color_map_scheme_valid = false;
     if (color_map_scheme_name == "rainbow") {
       color_map.reset(new RainbowColorMap());
-      color_map_scheme_valid = true;
+      color_map_scheme_valid = true; // RH
     } else if (color_map_scheme_name == "inverse_rainbow") {
       color_map.reset(new InverseRainbowColorMap());
-      color_map_scheme_valid = true;
+      color_map_scheme_valid = true; // RH
     } else if (color_map_scheme_name == "grayscale") {
       color_map.reset(new GrayscaleColorMap());
-      color_map_scheme_valid = true;
+      color_map_scheme_valid = true; // RH
     } else if (color_map_scheme_name == "inverse_grayscale") {
       color_map.reset(new InverseGrayscaleColorMap());
-      color_map_scheme_valid = true;
+      color_map_scheme_valid = true; // RH
     } else if (color_map_scheme_name == "ironbow") {
       color_map.reset(new IronbowColorMap());
-      color_map_scheme_valid = true;
-    } else if (color_map_scheme_name == "traffic-light") {
-      color_map.reset(new TrafficLightColorMap());
-      color_map_scheme_valid = true;
+      color_map_scheme_valid = true; // RH
+    } else if (color_map_scheme_name == "traffic-light") { // RH
+      color_map.reset(new TrafficLightColorMap()); // RH
+      color_map_scheme_valid = true; // RH
     }
 
     /// Print hints
@@ -142,7 +147,7 @@ namespace voxblox {
     } else {
       ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme_name);
       ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
-                                                                                    "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow, traffic-light");
+                      "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow, traffic-light");
     }
     return color_map_scheme_valid;
   }
@@ -276,7 +281,7 @@ namespace voxblox {
       calcIntensity(voxel->intensity, voxel->weight, rad_dist_func, use_logarithm, intensity);
       c = color_map->colorLookup(intensity);
     } else {
-      /// If voxel cannot found (not voxel at requested position) color black
+      /// If voxel cannot found (no voxel at requested position) color black
       c = Color(0.0, 0.0, 0.0, 0.0);
     }
     return c;
@@ -290,14 +295,15 @@ namespace voxblox {
     CHECK_NOTNULL(mesh_msg);
     CHECK(color_map);
 
-    // TODO: Go on adding comments and tiding up
-    // TODO: Add reference
-
-    // Go over all the blocks in the mesh message.
+    /// Go over all the blocks in the mesh message.
     for (voxblox_msgs::MeshBlock& mesh_block : mesh_msg->mesh_blocks) {
-      // Look up verticies in the thermal layer.
+      /// Look up verticies in the thermal layer.
       for (size_t vert_idx = 0u; vert_idx < mesh_block.x.size(); ++vert_idx) {
-
+        /// Copied from https://github.com/ethz-asl/voxblox/blob/master/voxblox_rviz_plugin/src/voxblox_mesh_visual.cc
+        /// line 40 - 56 (03.02.2020):
+        // Each vertex is given as its distance from the blocks origin in units of
+        // (2*block_size), see mesh_vis.h for the slightly convoluted
+        // justification of the 2.
         constexpr float point_conv_factor = 2.0f / std::numeric_limits<uint16_t>::max();
         const float mesh_x =
             (static_cast<float>(mesh_block.x[vert_idx]) * point_conv_factor +
@@ -308,13 +314,13 @@ namespace voxblox {
         const float mesh_z =
             (static_cast<float>(mesh_block.z[vert_idx]) * point_conv_factor +
              static_cast<float>(mesh_block.index[2])) * mesh_msg->block_edge_length;
+
+        /// Get color c from voxel v at position p
         Point p = Point(mesh_x, mesh_y, mesh_z);
-
         const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
-
         Color c = getColorForVoxelPointer(voxel, color_map, rad_dist_func, use_logarithm);
 
-        //Update mesh message color
+        /// Update mesh message color
         mesh_block.r[vert_idx] = c.r;
         mesh_block.g[vert_idx] = c.g;
         mesh_block.b[vert_idx] = c.b;
@@ -327,7 +333,7 @@ namespace voxblox {
 
     // Now recolor the mesh...
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
-    recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, color_map_, radiation_distance_function_, radiation_msg_use_log_,
+    recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, radiation_color_map_, radiation_distance_function_, radiation_use_logarithm_,
                                               &cached_mesh_msg_);
     // generateMesh(tmp_mesh);
 
@@ -336,7 +342,7 @@ namespace voxblox {
   }
 
   bool RadioNuclearMapperServer::generateMesh() {
-    return generateMesh(radiation_distance_function_name_, radiation_msg_use_log_);
+    return generateMesh(radiation_distance_function_name_, radiation_use_logarithm_);
   }
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function,
@@ -478,11 +484,11 @@ namespace voxblox {
     if (message.compare("original") == 0) {
       generateMesh();
     }else if (message.compare("constant") == 0) {
-      generateMesh("constant", radiation_msg_use_log_);
+      generateMesh("constant", radiation_use_logarithm_);
     }else if (message.compare("increasing") == 0) {
-      generateMesh("increasing", radiation_msg_use_log_);
+      generateMesh("increasing", radiation_use_logarithm_);
     }else if (message.compare("decreasing") == 0) {
-      generateMesh("decreasing", radiation_msg_use_log_);
+      generateMesh("decreasing", radiation_use_logarithm_);
     }else if (message.compare("all") == 0) {
       const bool use_log_or_not [] = {false, true};
       const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
