@@ -27,7 +27,7 @@ namespace voxblox {
       // finding an intersection with a surface.
       bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
           tsdf_layer_, origin, bearing_vectors[i], max_distance_,
-          &surface_intersection, &distance);  /// (RH: distance added)
+          &surface_intersection, &distance);  /// RH: distance added
 
       if (!success) {
         continue;
