@@ -8,7 +8,7 @@
 #include <std_msgs/String.h>
 
 /// The code in class RadioNuclearMapperServer comes from class IntensityServer
-/// and has been adapted for the special purpose.
+/// and has been adapted for the special purpose by me.
 /// New variables or methods are marked with the comment "RH" (Robert Hülsmann).
 
 namespace voxblox {
@@ -32,7 +32,7 @@ namespace voxblox {
 
       /// Batch update (whole block: RH)
       bool generateMesh() override;
-      virtual bool generateMesh(const std::string& distance_function, bool use_logarithm);
+      virtual bool generateMesh(const std::string& distance_function, const bool use_logarithm, const std::string& color_map_scheme_name);
 
       /// Publishes all available pointclouds.
       void publishPointclouds() override;
@@ -55,6 +55,7 @@ namespace voxblox {
       int radiation_bearing_vector_num_;
       Pointcloud bearing_vectors_;
       size_t rad_sen_callback_counter_;
+      std::string radiation_color_map_scheme_name_;
       std::shared_ptr<ColorMap> radiation_color_map_;
 
       /// Parameters for mesh saving (RH)

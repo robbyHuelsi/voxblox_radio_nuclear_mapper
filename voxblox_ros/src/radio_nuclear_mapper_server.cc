@@ -1,7 +1,7 @@
 #include "voxblox_ros/radio_nuclear_mapper_server.h"
 
 /// The code in class RadioNuclearMapperServer comes from class IntensityServer
-/// and has been adapted for the special purpose.
+/// and has been adapted for the special purpose by me.
 /// New variables or methods are marked with the comment "RH" (Robert Hülsmann) IN HEADER FILE.
 /// IN ADDITION, new lines of code in adopted methods are marked in the same way IN THIS FILE.
 
@@ -57,7 +57,7 @@ namespace voxblox {
     radiation_msg_val_max_ = 100000.0;
     radiation_use_logarithm_ = false;
     radiation_bearing_vector_num_ = 10000;
-    std::string color_map_scheme_name = "ironbow";
+    radiation_color_map_scheme_name_ = "ironbow";
     save_mesh_trigger_topic_ = "";
 
     /// Get ROS parameters
@@ -73,7 +73,7 @@ namespace voxblox {
     nh_private.param("radiation_msg_val_max", radiation_msg_val_max_, radiation_msg_val_max_);
     nh_private.param("radiation_bearing_vector_num",
                      radiation_bearing_vector_num_, radiation_bearing_vector_num_);
-    nh_private.param("radiation_colormap", color_map_scheme_name, color_map_scheme_name);
+    nh_private.param("radiation_colormap", radiation_color_map_scheme_name_, radiation_color_map_scheme_name_);
     nh_private.param<std::string>("save_mesh_trigger_topic",
                                   save_mesh_trigger_topic_, save_mesh_trigger_topic_);
 
@@ -94,7 +94,7 @@ namespace voxblox {
     }
 
     /// Set color map by given color scheme
-    setColorMapScheme(color_map_scheme_name, radiation_color_map_);
+    setColorMapScheme(radiation_color_map_scheme_name_, radiation_color_map_);
 
     /// Print message value parameters and make it logarithmic if needed
     ROS_INFO_STREAM("Radiation sensor value range (w/o logarithm): [" <<
@@ -329,53 +329,67 @@ namespace voxblox {
   }
 
   void RadioNuclearMapperServer::updateMesh() {
+    /// Run updateMesh() of parent class TsdfServer
     TsdfServer::updateMesh(); // TODO: Rewrite here and remove?
 
-    // Now recolor the mesh...
+    /// Use updated mesh, recolor and update it
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
     recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, radiation_color_map_, radiation_distance_function_, radiation_use_logarithm_,
                                               &cached_mesh_msg_);
-    // generateMesh(tmp_mesh);
-
     radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
   }
 
   bool RadioNuclearMapperServer::generateMesh() {
-    return generateMesh(radiation_distance_function_name_, radiation_use_logarithm_);
+    return generateMesh(radiation_distance_function_name_, radiation_use_logarithm_, radiation_color_map_scheme_name_);
   }
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function,
-                                              const bool use_logarithm){
-    std::string log_str = use_logarithm?"log":"no-log";
+                                              const bool use_logarithm,
+                                              const std::string& color_map_scheme_name){
+    timing::Timer generate_mesh_timer("radiation_mesh/generate");
 
-    timing::Timer generate_mesh_timer("mesh/generate");
+    /// Get radiation distance function by given string
     RDFType rad_dist_func;
     getRadiationDistanceFunctionByName(distance_function, rad_dist_func);
+
+    /// Create color map with wanted scheme
     std::shared_ptr<ColorMap> export_color_map;
-    setColorMapScheme("traffic-light", export_color_map);
+    setColorMapScheme(color_map_scheme_name, export_color_map);
     setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
                                    radiation_max_distance_, export_color_map);
 
+    /// Get mesh from parents (TSDF Server) mesh message
     Mesh mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
     convertMeshLayerToMesh(*mesh_layer_, &mesh, true);
     float num_mesh_points = float(mesh.size());
-    // Go over all the blocks in the mesh message.
+
+    /// define a helper string
+    std::string ident_str = distance_function + "-func_" + (use_logarithm?"log":"no-log") + "_";
+    ident_str += color_map_scheme_name + "-cm";
+
+    /// Go over all blocks in the mesh
     for (size_t i = 0; i < mesh.size(); i++) {
+
+      /// Print status information
       if (i % 10 == 0){
         float percentage = std::round(float(i) / num_mesh_points * 1000.0) / 10.0;
-        std::cout << "Recoloring (" << distance_function << " function, " << log_str << "): " << percentage << " %     \r" <<std::flush;
+        std::cout << "Recoloring (" << ident_str << "): " << percentage << " %    \r" <<std::flush;
       }
+
+      /// Recolor mesh
       Point p = mesh.vertices[i];
       const IntensityVoxel* voxel = radiation_layer_->getVoxelPtrByCoordinates(p);
       Color c = getColorForVoxelPointer(voxel, export_color_map, rad_dist_func, use_logarithm);
       mesh.colors[i] = c;
     }
-    std::cout << "Recoloring done.                                                    " << std::endl;
-    generate_mesh_timer.Stop();
 
-    timing::Timer output_mesh_timer("mesh/output");
-    std::cout << "Exporting (" << distance_function << " function, " << log_str << ") ..." <<std::endl;
+    std::cout << "Recoloring (" << ident_str << ") done.  " << std::endl;
+
+    generate_mesh_timer.Stop();
+    timing::Timer output_mesh_timer("radiation_mesh/output");
+
+    /// Create file name including function, log, color map and time stamp
     time_t raw_time;
     struct tm * time_info;
     char time_buffer[80];
@@ -383,12 +397,12 @@ namespace voxblox {
     time_info = localtime(&raw_time);
     strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
     std::string time_str = time_buffer;
-//    struct timeval seconds;
-//    gettimeofday(&seconds, NULL);
-//    std::string miliseconds_str = std::to_string((long int)seconds.tv_usec);
+    std::string filename = ident_str + "_" + time_str + ".ply";
 
-    std::string filename = "" + log_str + "_" + distance_function + "_" + time_str + ".ply";
+    /// Save mesh
+    std::cout << "Exporting (" << ident_str << ") ... \r" <<std::flush;
     const bool success = outputMeshAsPly(filename, mesh);
+    std::cout << "Exporting (" << ident_str << ") done." <<std::endl;
     output_mesh_timer.Stop();
 
     if (success) {
@@ -484,17 +498,17 @@ namespace voxblox {
     if (message.compare("original") == 0) {
       generateMesh();
     }else if (message.compare("constant") == 0) {
-      generateMesh("constant", radiation_use_logarithm_);
+      generateMesh("constant", radiation_use_logarithm_, "traffic-light");
     }else if (message.compare("increasing") == 0) {
-      generateMesh("increasing", radiation_use_logarithm_);
+      generateMesh("increasing", radiation_use_logarithm_, "traffic-light");
     }else if (message.compare("decreasing") == 0) {
-      generateMesh("decreasing", radiation_use_logarithm_);
+      generateMesh("decreasing", radiation_use_logarithm_, "traffic-light");
     }else if (message.compare("all") == 0) {
       const bool use_log_or_not [] = {false, true};
       const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
       for (const bool log : use_log_or_not) {
         for (const std::string dist_func : distance_functions) {
-          generateMesh(dist_func, log);
+          generateMesh(dist_func, log, "traffic-light");
         }
       }
     }
