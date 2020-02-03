@@ -15,7 +15,7 @@ namespace voxblox {
 
   class RadioNuclearMapperServer;
   /// Type definition for radiation distance function
-  typedef void (RadioNuclearMapperServer::*RDFType)(float&, const float&);
+  typedef float (RadioNuclearMapperServer::*RDFType)(const float);
 
   class RadioNuclearMapperServer : public TsdfServer {
     public:
@@ -32,7 +32,7 @@ namespace voxblox {
 
       /// Batch update (whole block: RH)
       bool generateMesh() override;
-      virtual bool generateMesh(const std::string& distance_function, const bool use_logarithm, const std::string& color_map_scheme_name);
+      virtual bool generateMesh(const std::string& distance_function_name, const bool use_logarithm, const std::string& color_map_scheme_name);
 
       /// Publishes all available pointclouds.
       void publishPointclouds() override;
@@ -98,11 +98,11 @@ namespace voxblox {
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
       void saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg);
 
-      /// whole block: RH
-      void rad_dist_func_increasing(float& intensity, const float& distance);
-      void rad_dist_func_decreasing(float& intensity, const float& distance);
-      void rad_dist_func_constant(float& intensity, const float& distance);
-      void rad_dist_func_zero(float& intensity, const float& distance);
+      /// Radiation distance functions (whole block: RH)
+      float rad_dist_func_increasing(const float distance);
+      float rad_dist_func_decreasing(const float distance);
+      float rad_dist_func_constant(const float distance);
+      float rad_dist_func_infinity(const float distance);
   };
 }  // namespace voxblox
 

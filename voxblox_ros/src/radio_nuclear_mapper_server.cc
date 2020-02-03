@@ -157,7 +157,7 @@ namespace voxblox {
     /// Check if the incoming string is allowed
     std::vector<std::string> allowed_funcs = {"increasing", "decreasing", "constant"};
     if(std::find(allowed_funcs.begin(), allowed_funcs.end(), distance_function_name) == allowed_funcs.end()){
-      rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_zero;
+      rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_infinity;
       /// Distance function string is not allowed
       ROS_ERROR("Radiation distance function is called by a not supported string.");
       /// Generate hint for user
@@ -256,11 +256,9 @@ namespace voxblox {
 
   inline void RadioNuclearMapperServer::calcIntensity(const float sensor_value, const float distance,
                                                RDFType& rad_dist_func, const bool use_logarithm, float& intensity) {
-    intensity = sensor_value;
-
-    /// Apply the desired radiation distance function
-    /// Looks crazy, but it works (https://stackoverflow.com/a/1486279)
-    (*this.*rad_dist_func)(intensity, distance);
+    /// Apply desired radiation distance function and calculate intensity by multiplying with sensor value
+    /// Applying function looks crazy, but it works (https://stackoverflow.com/a/1486279)
+    intensity = sensor_value * (*this.*rad_dist_func)(distance);
 
     /// Use logarithmic mapping if needed
     if(use_logarithm){
@@ -345,14 +343,14 @@ namespace voxblox {
     return generateMesh(radiation_distance_function_name_, radiation_use_logarithm_, radiation_color_map_scheme_name_);
   }
 
-  bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function,
+  bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function_name,
                                               const bool use_logarithm,
                                               const std::string& color_map_scheme_name){
     timing::Timer generate_mesh_timer("radiation_mesh/generate");
 
     /// Get radiation distance function by given string
     RDFType rad_dist_func;
-    getRadiationDistanceFunctionByName(distance_function, rad_dist_func);
+    getRadiationDistanceFunctionByName(distance_function_name, rad_dist_func);
 
     /// Create color map with wanted scheme
     std::shared_ptr<ColorMap> export_color_map;
@@ -366,7 +364,7 @@ namespace voxblox {
     float num_mesh_points = float(mesh.size());
 
     /// define a helper string
-    std::string ident_str = distance_function + "-func_" + (use_logarithm?"log":"no-log") + "_";
+    std::string ident_str = distance_function_name + "-func_" + (use_logarithm ? "log" : "no-log") + "_";
     ident_str += color_map_scheme_name + "-cm";
 
     /// Go over all blocks in the mesh
@@ -503,45 +501,41 @@ namespace voxblox {
   }
 
   /**
-   * Increasing Radiation Distant Function
-   * @param intensity
+   * Increasing Radiation Distant Function: f(d) = (d+1)^2
    * @param distance
+   * @return
    */
-  void RadioNuclearMapperServer::rad_dist_func_increasing(float& intensity, const float& distance){
-    intensity = intensity * pow(distance + 1.0, 2);
-//    printf("increasing\n");
+  float RadioNuclearMapperServer::rad_dist_func_increasing(const float distance){
+    return pow(distance + 1.0, 2);
   }
 
   /**
-   * Decreasing Radiation Distant Function
-   * @param intensity
+   * Decreasing Radiation Distant Function: f(d) = 1 / (d+1)^2
    * @param distance
+   * @return
    */
-  void RadioNuclearMapperServer::rad_dist_func_decreasing(float& intensity, const float& distance){
-    intensity = intensity / pow(distance + 1.0, 2);
-//    printf("decreasing\n");
+  float RadioNuclearMapperServer::rad_dist_func_decreasing(const float distance){
+    return 1.0 / pow(distance + 1.0, 2);
   }
 
   /**
-   * Constant Radiation Distant Function with return value one
-   * @param intensity
+   * Constant Radiation Distant Function: f(d) = 1
    * @param distance
+   * @return
    */
-  void RadioNuclearMapperServer::rad_dist_func_constant(float& intensity, const float& distance){
-    (void)intensity; // To silence compiler (intensity = intensity)
+  float RadioNuclearMapperServer::rad_dist_func_constant(const float distance){
     (void)distance;  // To silence compiler
-//    printf("constant\n");
+    return 1.0;
   }
 
   /**
-   * Constant Radiation Distant Function with return value zero
-   * @param intensity
+   * Constant Radiation Distant Function: f(d) = \infty
    * @param distance
+   * @return
    */
-  void RadioNuclearMapperServer::rad_dist_func_zero(float& intensity, const float& distance){
-    intensity = 0.0;
+  float RadioNuclearMapperServer::rad_dist_func_infinity(const float distance){
     (void)distance; //To silence compiler
-//    printf("zero\n");
+    return std::numeric_limits<float>::infinity();
   }
 
 }  // namespace voxblox
