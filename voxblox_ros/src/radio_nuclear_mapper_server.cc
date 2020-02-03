@@ -38,7 +38,7 @@ namespace voxblox {
         nh_private_.advertise<voxblox_msgs::Mesh>("radiation_mesh", 1, true);
 
     /// Subscribe radiation intensity (whole block: RH)
-    rad_sen_callback_counter_ = 0;
+    radiation_sensor_callback_counter_ = 0;
     radiation_sensor_sub_ = nh_private_.subscribe(
         radiation_sensor_topic_, 1, &RadioNuclearMapperServer::radiationSensorCallback, this);
 
@@ -334,7 +334,8 @@ namespace voxblox {
 
     /// Use updated mesh, recolor and update it
     timing::Timer publish_mesh_timer("radiation_mesh/publish");
-    recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, radiation_color_map_, radiation_distance_function_, radiation_use_logarithm_,
+    recolorVoxbloxMeshMsgByRadiationIntensity(*radiation_layer_, radiation_color_map_,
+                                              radiation_distance_function_, radiation_use_logarithm_,
                                               &cached_mesh_msg_);
     radiation_mesh_pub_.publish(cached_mesh_msg_);
     publish_mesh_timer.Stop();
@@ -417,7 +418,7 @@ namespace voxblox {
   }
 
   void RadioNuclearMapperServer::publishPointclouds() {
-    // Create a pointcloud with radiation = intensity.
+    /// Create a pointcloud with radiation = intensity.
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
     createIntensityPointcloudFromIntensityLayer(*radiation_layer_, &pointcloud);
@@ -433,10 +434,13 @@ namespace voxblox {
     CHECK(radiation_integrator_);
     CHECK(msg);
 
-    size_t currCout = rad_sen_callback_counter_++;
+    size_t current_callback_num = radiation_sensor_callback_counter_++;
 
-    // Get value from radiation sensor subscriber message
+    /// Get value from radiation sensor subscriber message
     float radiation_sensor_value = (float)msg->value;
+    ROS_INFO_STREAM(current_callback_num << ": New radiation value: " << radiation_sensor_value);
+
+    /// Check if value between minimum and maximum
     if (radiation_sensor_value < radiation_msg_val_min_) {
       ROS_WARN_STREAM("Radiation sensor value is smaller than minimum: " <<
                       radiation_sensor_value << " <" << radiation_msg_val_min_ << ")");
@@ -446,54 +450,38 @@ namespace voxblox {
                       radiation_sensor_value << ">" << radiation_msg_val_max_ << ")");
     }
 
-    ROS_INFO_STREAM(currCout << ": New radiation value: " << radiation_sensor_value);
-
-    // Look up transform
+    /// Try to look up transformation at the time from the message header,
+    /// otherwise at the time of the last available transformation.
     Transformation T_G_C;
-//    ros::Time t = ; //msg->header.stamp
-    if (!transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
-                                     ros::Time(0, 0), // To get latest positions
+    if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
+                                     msg->header.stamp,
                                       &T_G_C)) {
-      ROS_WARN_STREAM(currCout << ": Failed to look up intensity transform!");
-//      ROS_WARN_THROTTLE(10, "Failed to look up intensity transform!");
+      /// Successful with time from header - do nothing
+    } else if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
+                                            ros::Time(0, 0), /// to get latest transformation
+                                            &T_G_C)) {
+      /// Successful with latest transformation - do nothing
+    } else {
+      /// Not successful
+      ROS_WARN_STREAM(current_callback_num << ": Failed to look up intensity transform!");
+      // ROS_WARN_THROTTLE(10, "Failed to look up intensity transform!");
       return;
     }
 
-//    ROS_INFO_STREAM(currCout << ": Before bearing_vectors...");
-
-    // Pre-allocate the bearing vectors and intensities.
-//    Pointcloud bearing_vectors;
-//    bearing_vectors.reserve(radiation_ang_res_z_ * radiation_ang_res_y_ + 1);
-//    for (int i = 0; i < radiation_ang_res_y_; i++) {
-//      float beta = (float)i / (float)radiation_ang_res_y_ * 2.0 * M_PI;
-//      for (int j = 0; j < radiation_ang_res_z_; j++) {
-//        float gamma = (float)j / (float)radiation_ang_res_z_ * 2.0 * M_PI;
-//
-//        //  |  cos(c) -sin(c)    0    |   |  cos(b)    0     sin(b) |   | 1 |   | cos(b) * cos(c) |
-//        //  |  sin(c)  cos(c)    0    | * |    0       1       0    | * | 0 | = | cos(b) * sin(c) |
-//        //  |    0       0       1    |   | -sin(b)    0     cos(b) |   | 0 |   |     -sin(b)     |
-//
-//        Ray bearing_vector = Point(cos(beta) * cos(gamma), cos(beta) * sin(gamma), -sin(beta));
-//        bearing_vectors.push_back(bearing_vector); // .normalized()
-//      }
-//    }
-
-//    ROS_INFO_STREAM(currCout << ": Before integrator...");
-
-    // Put this into the integrator.
+    /// Put this into the integrator.
     radiation_integrator_->addRadiationSensorValueBearingVectors(
         T_G_C.getPosition(), bearing_vectors_, radiation_sensor_value);
 
-    ROS_INFO_STREAM(currCout << ": Done.");
+    ROS_INFO_STREAM(current_callback_num << ": Done.");
   }
 
   void RadioNuclearMapperServer::saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg){
     CHECK(msg);
 
-    // Get value from subscriber message
+    /// Get value from subscriber message
     std::string message = msg->data.data();
 
-    ROS_INFO_STREAM("Save Message Trigger Message: " << message);
+    ROS_INFO_STREAM("Save Mesh Trigger Message: " << message);
 
     if (message.compare("original") == 0) {
       generateMesh();
@@ -514,22 +502,42 @@ namespace voxblox {
     }
   }
 
+  /**
+   * Increasing Radiation Distant Function
+   * @param intensity
+   * @param distance
+   */
   void RadioNuclearMapperServer::rad_dist_func_increasing(float& intensity, const float& distance){
     intensity = intensity * pow(distance + 1.0, 2);
 //    printf("increasing\n");
   }
 
+  /**
+   * Decreasing Radiation Distant Function
+   * @param intensity
+   * @param distance
+   */
   void RadioNuclearMapperServer::rad_dist_func_decreasing(float& intensity, const float& distance){
     intensity = intensity / pow(distance + 1.0, 2);
 //    printf("decreasing\n");
   }
 
+  /**
+   * Constant Radiation Distant Function with return value one
+   * @param intensity
+   * @param distance
+   */
   void RadioNuclearMapperServer::rad_dist_func_constant(float& intensity, const float& distance){
     (void)intensity; // To silence compiler (intensity = intensity)
     (void)distance;  // To silence compiler
 //    printf("constant\n");
   }
 
+  /**
+   * Constant Radiation Distant Function with return value zero
+   * @param intensity
+   * @param distance
+   */
   void RadioNuclearMapperServer::rad_dist_func_zero(float& intensity, const float& distance){
     intensity = 0.0;
     (void)distance; //To silence compiler

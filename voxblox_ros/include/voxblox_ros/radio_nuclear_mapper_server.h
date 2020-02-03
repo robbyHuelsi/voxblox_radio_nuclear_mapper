@@ -54,7 +54,7 @@ namespace voxblox {
       float radiation_msg_val_max_;
       int radiation_bearing_vector_num_;
       Pointcloud bearing_vectors_;
-      size_t rad_sen_callback_counter_;
+      size_t radiation_sensor_callback_counter_;
       std::string radiation_color_map_scheme_name_;
       std::shared_ptr<ColorMap> radiation_color_map_;
 
