@@ -9,6 +9,7 @@
 #include "voxblox_ros/tsdf_server.h"
 #include "voxblox/core/common.h"
 #include "voxblox/integrator/radio_nuclear_mapper_integrator.h"
+#include "voxblox/utils/radio_nuclear_mapper_color_maps.h"
 #include <abc_msgs_fkie/MeasurementRaw.h>
 #include <std_msgs/String.h>
 
