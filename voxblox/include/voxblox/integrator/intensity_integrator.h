@@ -51,7 +51,6 @@ class IntensityIntegrator {
 
   const Layer<TsdfVoxel>& tsdf_layer_;
   Layer<IntensityVoxel>* intensity_layer_;
-
 };
 
 }  // namespace voxblox
