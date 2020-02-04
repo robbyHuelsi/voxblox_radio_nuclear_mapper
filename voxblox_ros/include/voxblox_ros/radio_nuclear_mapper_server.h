@@ -81,22 +81,29 @@ namespace voxblox {
                                               RDFType& rad_dist_func);
       void setCMExtrValByMostExtrPossible(float radiation_msg_val_min,
                                           float radiation_msg_val_max,
-                                          RDFType& rad_dist_func,
+                                          const RDFType& rad_dist_func,
                                           bool use_logarithm,
                                           float radiation_max_distance,
-                                          const std::shared_ptr<ColorMap>& color_map);
+                                          std::shared_ptr<ColorMap>& color_map);
+      void setCMExtrValByExtrValOfVoxelsAtMeshPositions(const Mesh& mesh, const Layer<RadiationVoxel>& radiation_layer,
+                                                        const RDFType& rad_dist_func, bool use_logarithm,
+                                                        const std::string& ident_str,
+                                                        std::shared_ptr<ColorMap>& color_map);
 
       static void generateBearingVectors(int n, Pointcloud& bearing_vectors); /// RH
 
       /// whole block: RH
-      void calcIntensity(float sensor_value, float distance,
-                         RDFType& rad_dist_func, bool use_logarithm, float& intensity);
+      float calcIntensity(float sensor_value, float distance, const RDFType& rad_dist_func, bool use_logarithm);
       Color getColorForVoxelPointer(const RadiationVoxel* voxel, const std::shared_ptr<ColorMap>& color_map,
-                                    RDFType& rad_dist_func, bool use_logarithm);
-      void recolorVoxbloxMeshMsgByRadiationIntensity(const Layer<RadiationVoxel>& intensity_layer,
+                                    const RDFType& rad_dist_func, bool use_logarithm);
+      void recolorVoxbloxMeshMsgByRadiationIntensity(const Layer<RadiationVoxel>& radiation_layer,
                                                      const std::shared_ptr<ColorMap>& color_map,
-                                                     RDFType& rad_dist_func, bool use_logarithm,
+                                                     const RDFType& rad_dist_func, bool use_logarithm,
                                                      voxblox_msgs::Mesh* mesh_msg);
+      void recolorVoxbloxMeshByRadiationIntensity(const Layer<RadiationVoxel>& radiation_layer,
+                                                  const std::shared_ptr<ColorMap>& color_map,
+                                                  const RDFType& rad_dist_func, bool use_logarithm,
+                                                  std::string& ident_str, Mesh& mesh);
 
       /// whole block: RH
       void radiationSensorCallback(const abc_msgs_fkie::MeasurementRawConstPtr& msg);
