@@ -13,19 +13,12 @@ namespace voxblox {
  * false otherwise (no known space, no surface boundary, etc.).
  * VoxelType must have a distance defined.
  */
-
-struct DistanceUtilsResult {
-  double distance;
-  double closer_than_max_dist;
-};
-
 template <typename VoxelType>
-DistanceUtilsResult getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
-//bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
-                                                    const Point& ray_origin,
-                                                    const Point& bearing_vector,
-                                                    FloatingPoint max_distance,
-                                                    Point* triangulated_pose) {
+bool getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
+                                const Point& ray_origin,
+                                const Point& bearing_vector,
+                                FloatingPoint max_distance,
+                                Point* triangulated_pose) {
   CHECK_NOTNULL(triangulated_pose);
   // Make sure bearing vector is normalized.
   const Point ray_direction = bearing_vector.normalized();
@@ -81,11 +74,7 @@ DistanceUtilsResult getSurfaceDistanceAlongRay(const Layer<VoxelType>& layer,
     *triangulated_pose = ray_origin + t * ray_direction;
   }
 
-  //return surface_found;
-  DistanceUtilsResult res;
-  res.distance = t;
-  res.closer_than_max_dist = surface_found;
-  return res;
+  return surface_found;
 }
 
 }  // namespace voxblox

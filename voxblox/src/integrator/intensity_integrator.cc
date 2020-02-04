@@ -31,25 +31,13 @@ void IntensityIntegrator::addIntensityBearingVectors(
     Point surface_intersection = Point::Zero();
     // Cast ray from the origin in the direction of the bearing vector until
     // finding an intersection with a surface.
-    DistanceUtilsResult dist_to_surface = getSurfaceDistanceAlongRay<TsdfVoxel>(
-//    bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
+    bool success = getSurfaceDistanceAlongRay<TsdfVoxel>(
         tsdf_layer_, origin, bearing_vectors[i], max_distance_,
         &surface_intersection);
 
-    if(!dist_to_surface.closer_than_max_dist){
-      //printf("Too far away (%f m). \n", dist_to_surface.distance);
+    if (!success) {
       continue;
     }
-
-    if(dist_to_surface.distance < 0.1){
-      //printf("Too close (%f m). \n", dist_to_surface.distance);
-      continue;
-    }
-
-    float distance = dist_to_surface.distance / max_distance_;
-    float new_intensity = intensities[i] * distance * distance;
-    float new_weight = (1.0 - distance);
-    //printf("d/d_max: %f; intensity_img: %f, intensity_res: %f\n", distance, intensities[i], new_intensity);
 
     // Now look up the matching voxels in the intensity layer and mark them.
     // Let's just start with 1.
@@ -57,22 +45,9 @@ void IntensityIntegrator::addIntensityBearingVectors(
         intensity_layer_->allocateBlockPtrByCoordinates(surface_intersection);
     IntensityVoxel& voxel =
         block_ptr->getVoxelByCoordinates(surface_intersection);
-    // Version 0
-//    voxel.intensity =
-//        (voxel.weight * voxel.intensity + intensities[i]) / (voxel.weight + 1);
-//    voxel.weight += 1.0;
-//    if (voxel.weight > max_weight_) {
-//      voxel.weight = max_weight_;
-//    }
-    // Version 1
-//    if (intensity > voxel.intensity) {
-//      voxel.intensity = intensity;
-//    }
-//    voxel.weight = max_weight_;
-    // Version 2
     voxel.intensity =
-        (voxel.weight * voxel.intensity + new_intensity * new_weight) / (voxel.weight + new_weight);
-    voxel.weight += new_weight;
+        (voxel.weight * voxel.intensity + intensities[i]) / (voxel.weight + 1);
+    voxel.weight += 1.0;
     if (voxel.weight > max_weight_) {
       voxel.weight = max_weight_;
     }
@@ -87,22 +62,9 @@ void IntensityIntegrator::addIntensityBearingVectors(
       Block<IntensityVoxel>::Ptr new_block_ptr =
           intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
       IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
-      if (new_voxel.weight < 1e-6) { //todo: nochmal checken, was das für Auswirkungen hat
-        // Version 0
-//        new_voxel.intensity = intensities[i];
-//        new_voxel.weight += 1.0;
-        // Version 1
-        if (new_intensity > new_voxel.intensity) {
-          new_voxel.intensity = new_intensity;
-        }
-        new_voxel.weight = max_weight_;
-        // Version 2
-        new_voxel.intensity =
-            (new_voxel.weight * new_voxel.intensity + new_intensity * new_weight) / (new_voxel.weight + new_weight);
-        new_voxel.weight += new_weight;
-        if (new_voxel.weight > max_weight_) {
-          new_voxel.weight = max_weight_;
-        }
+      if (new_voxel.weight < 1e-6) {
+        new_voxel.intensity = intensities[i];
+        new_voxel.weight += 1.0;
       }
     }
   }
