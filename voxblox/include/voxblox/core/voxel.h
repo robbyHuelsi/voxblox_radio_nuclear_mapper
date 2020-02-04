@@ -43,7 +43,7 @@ struct OccupancyVoxel {
 
 struct IntensityVoxel {
   float intensity = 0.0f;
-  float weight = std::numeric_limits<float>::infinity();
+  float weight = 0.0f;
 };
 
 /// Used for serialization only.
