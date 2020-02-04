@@ -439,7 +439,7 @@ namespace voxblox {
     convertMeshLayerToMesh(*mesh_layer_, &mesh, true);
 
     /// Get radiation distance function by given string
-    RDFType rad_dist_func;
+    RDFType rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_infinity;
     getRadiationDistanceFunctionByName(distance_function_name, rad_dist_func);
 
     /// define a helper string for terminal hints and file name
@@ -548,7 +548,7 @@ namespace voxblox {
     CHECK(msg);
 
     /// Get value from subscriber message
-    std::string message = msg->data.data();
+    std::string message = msg->data;
 
     ROS_INFO_STREAM("Save Mesh Trigger Message: " << message);
 
@@ -586,7 +586,7 @@ namespace voxblox {
    * @return
    */
    float RadioNuclearMapperServer::rad_dist_func_decreasing(const float distance){
-    return 1.0 / pow(distance + 1.0, 2);
+    return float(1.0 / pow(distance + 1.0, 2));
   }
 
   /**
