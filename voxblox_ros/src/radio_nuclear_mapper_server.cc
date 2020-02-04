@@ -166,8 +166,8 @@ namespace voxblox {
       ROS_ERROR("Radiation distance function is called by a not supported string.");
       /// Generate hint for user
       std::stringstream allowed_funcs_ss = std::stringstream();
-      for(std::vector<std::string>::iterator it = allowed_funcs.begin(); it != allowed_funcs.end(); ++it) {
-        allowed_funcs_ss << *it << ", ";
+      for(auto & allowed_func : allowed_funcs) {
+        allowed_funcs_ss << allowed_func << ", ";
       }
       ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " <<
                       allowed_funcs_ss.str().substr(0, allowed_funcs_ss.str().length()-2));
@@ -245,7 +245,7 @@ namespace voxblox {
                                                                            const std::string& ident_str,
                                                                            std::shared_ptr<ColorMap>& color_map){
 
-    float num_mesh_points = float(mesh.size());
+    auto num_mesh_points = float(mesh.size());
     float intensity;
     float minimum = std::numeric_limits<float>::infinity();
     float maximum = 0.0;
@@ -255,7 +255,7 @@ namespace voxblox {
 
       /// Print status information
       if (i % 10 == 0){
-        float percentage = std::round(float(i) / num_mesh_points * 1000.0) / 10.0;
+        auto percentage = float(std::round(float(i) / num_mesh_points * 1000.0) / 10.0);
         std::cout << "Set color map value range (" << ident_str << "): " << percentage << " %    \r" <<std::flush;
       }
 
@@ -316,7 +316,7 @@ namespace voxblox {
                                                        const RDFType& rad_dist_func, const bool use_logarithm) {
     /// Apply desired radiation distance function and calculate intensity by multiplying with sensor value
     /// Applying function looks crazy, but it works (https://stackoverflow.com/a/1486279)
-    float intensity = sensor_value * (*this.*rad_dist_func)(distance);
+    auto intensity = float(sensor_value * (*rad_dist_func)(distance));
 
     /// Use logarithmic mapping if needed
     if(use_logarithm){
@@ -391,14 +391,14 @@ namespace voxblox {
                                                                         const RDFType& rad_dist_func,
                                                                         const bool use_logarithm,
                                                                         std::string& ident_str, Mesh& mesh) {
-    float num_mesh_points = float(mesh.size());
+    auto num_mesh_points = float(mesh.size());
 
     /// Go over all blocks in the mesh
     for (size_t i = 0; i < mesh.size(); i++) {
 
       /// Print status information
       if (i % 10 == 0){
-        float percentage = std::round(float(i) / num_mesh_points * 1000.0) / 10.0;
+        auto percentage = float(std::round(float(i) / num_mesh_points * 1000.0) / 10.0);
         std::cout << "Recoloring (" << ident_str << "): " << percentage << " %    \r" <<std::flush;
       }
 
@@ -508,7 +508,7 @@ namespace voxblox {
     size_t current_callback_num = radiation_sensor_callback_counter_++;
 
     /// Get value from radiation sensor subscriber message
-    float radiation_sensor_value = (float)msg->value;
+    auto radiation_sensor_value = float(msg->value);
     ROS_INFO_STREAM(current_callback_num << ": New radiation value: " << radiation_sensor_value);
 
     /// Check if value between minimum and maximum
@@ -524,9 +524,7 @@ namespace voxblox {
     /// Try to look up transformation at the time from the message header,
     /// otherwise at the time of the last available transformation.
     Transformation T_G_C;
-    if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
-                                     msg->header.stamp,
-                                      &T_G_C)) {
+    if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_, msg->header.stamp, &T_G_C)) {
       /// Successful with time from header - do nothing
     } else if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
                                             ros::Time(0, 0), /// to get latest transformation
@@ -554,19 +552,19 @@ namespace voxblox {
 
     ROS_INFO_STREAM("Save Mesh Trigger Message: " << message);
 
-    if (message.compare("original") == 0) {
+    if (message == "original") {
       generateMesh();
-    }else if (message.compare("constant") == 0) {
+    }else if (message == "constant") {
       generateMesh("constant", radiation_use_logarithm_, "traffic-light");
-    }else if (message.compare("increasing") == 0) {
+    }else if (message == "increasing") {
       generateMesh("increasing", radiation_use_logarithm_, "traffic-light");
-    }else if (message.compare("decreasing") == 0) {
+    }else if (message == "decreasing") {
       generateMesh("decreasing", radiation_use_logarithm_, "traffic-light");
-    }else if (message.compare("all") == 0) {
+    }else if (message == "all") {
       const bool use_log_or_not [] = {false, true};
       const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
       for (const bool log : use_log_or_not) {
-        for (const std::string dist_func : distance_functions) {
+        for (const std::string& dist_func : distance_functions) {
           generateMesh(dist_func, log, "traffic-light");
         }
       }
@@ -578,7 +576,7 @@ namespace voxblox {
    * @param distance
    * @return
    */
-  float RadioNuclearMapperServer::rad_dist_func_increasing(const float distance){
+   float RadioNuclearMapperServer::rad_dist_func_increasing(const float distance){
     return pow(distance + 1.0, 2);
   }
 
@@ -587,7 +585,7 @@ namespace voxblox {
    * @param distance
    * @return
    */
-  float RadioNuclearMapperServer::rad_dist_func_decreasing(const float distance){
+   float RadioNuclearMapperServer::rad_dist_func_decreasing(const float distance){
     return 1.0 / pow(distance + 1.0, 2);
   }
 
@@ -596,7 +594,7 @@ namespace voxblox {
    * @param distance
    * @return
    */
-  float RadioNuclearMapperServer::rad_dist_func_constant(const float distance){
+   float RadioNuclearMapperServer::rad_dist_func_constant(const float distance){
     (void)distance;  /// To silence compiler
     return 1.0;
   }
