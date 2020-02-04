@@ -22,12 +22,6 @@ void IntensityIntegrator::addIntensityBearingVectors(
   const FloatingPoint voxel_size = tsdf_layer_.voxel_size();
 
   for (size_t i = 0; i < bearing_vectors.size(); ++i) {
-
-    if(intensities[i] < 0.1){
-      //printf("Intensity too small (%f). \n", intensities[i]);
-      continue;
-    }
-
     Point surface_intersection = Point::Zero();
     // Cast ray from the origin in the direction of the bearing vector until
     // finding an intersection with a surface.
