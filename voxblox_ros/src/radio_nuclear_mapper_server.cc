@@ -1,9 +1,10 @@
-#include "voxblox_ros/radio_nuclear_mapper_server.h"
-
-/// The code in class RadioNuclearMapperServer comes from class IntensityServer
-/// and has been adapted for the special purpose by me.
-/// New variables or methods are marked with the comment "RH" (Robert Hülsmann) IN HEADER FILE.
+/// Plagiarism Notice:
+/// The code in this file comes from file intensity_server.cc
+/// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
+/// New variables or methods of class RadioNuclearMapperServer are marked with the comment "RH" IN HEADER FILE.
 /// IN ADDITION, new lines of code in adopted methods are marked in the same way IN THIS FILE.
+
+#include "voxblox_ros/radio_nuclear_mapper_server.h"
 
 namespace voxblox {
   RadioNuclearMapperServer::RadioNuclearMapperServer(const ros::NodeHandle& nh,

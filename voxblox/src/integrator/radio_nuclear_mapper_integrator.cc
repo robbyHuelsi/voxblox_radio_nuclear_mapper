@@ -1,9 +1,10 @@
-#include "voxblox/integrator/radio_nuclear_mapper_integrator.h"
-
-/// The code in class RadioNuclearMapperIntegrator comes from class IntensityIntegrator
-/// and has been adapted for the special purpose by me.
-/// New variables or methods are marked with the comment "RH" (Robert Hülsmann) IN HEADER FILE.
+/// Plagiarism Notice:
+/// The code in this file comes from file intensity_integrator.cc
+/// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
+/// New variables or methods of class RadioNuclearMapperIntegrator are marked with the comment "RH" IN HEADER FILE.
 /// IN ADDITION, new lines of code in adopted methods are marked in the same way IN THIS FILE.
+
+#include "voxblox/integrator/radio_nuclear_mapper_integrator.h"
 
 namespace voxblox {
   RadioNuclearMapperIntegrator::RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,

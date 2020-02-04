@@ -1,3 +1,8 @@
+/// Plagiarism Notice:
+/// The code in this file comes from file intensity_integrator.h
+/// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
+/// New variables or methods of class RadioNuclearMapperIntegrator are marked with the comment "RH".
+
 #ifndef VOXBLOX_INTEGRATOR_RADIO_NUCLEAR_MAPPER_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_RADIO_NUCLEAR_MAPPER_INTEGRATOR_H_
 
@@ -14,11 +19,7 @@
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
 
-#include "voxblox/utils/radio_nuclear_mapper_distance_utils.h" // todo
-
-/// The code in class RadioNuclearMapperIntegrator comes from class IntensityIntegrator
-/// and has been adapted for the special purpose by me.
-/// New variables or methods are marked with the comment "RH" (Robert Hülsmann).
+#include "voxblox/utils/radio_nuclear_mapper_distance_utils.h"
 
 namespace voxblox {
 

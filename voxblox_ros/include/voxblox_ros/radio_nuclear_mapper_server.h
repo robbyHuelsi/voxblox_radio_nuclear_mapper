@@ -1,3 +1,8 @@
+/// Plagiarism Notice:
+/// The code in this file comes from file intensity_server.h
+/// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
+/// New variables or methods of class RadioNuclearMapperServer are marked with the comment "RH".
+
 #ifndef VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 #define VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 
@@ -6,10 +11,6 @@
 #include "voxblox/integrator/radio_nuclear_mapper_integrator.h"
 #include <abc_msgs_fkie/MeasurementRaw.h>
 #include <std_msgs/String.h>
-
-/// The code in class RadioNuclearMapperServer comes from class IntensityServer
-/// and has been adapted for the special purpose by me.
-/// New variables or methods are marked with the comment "RH" (Robert Hülsmann).
 
 namespace voxblox {
 
