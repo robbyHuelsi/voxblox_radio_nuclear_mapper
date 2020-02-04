@@ -1,7 +1,7 @@
 /// Plagiarism Notice:
 /// The code in this file comes from file intensity_integrator.h
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
-/// New variables or methods of class RadioNuclearMapperIntegrator are marked with the comment "RH".
+/// New/edited variables or methods of class RadioNuclearMapperIntegrator are marked with the comment "RH".
 
 #ifndef VOXBLOX_INTEGRATOR_RADIO_NUCLEAR_MAPPER_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_RADIO_NUCLEAR_MAPPER_INTEGRATOR_H_

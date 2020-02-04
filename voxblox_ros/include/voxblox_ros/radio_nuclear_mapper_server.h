@@ -1,7 +1,7 @@
 /// Plagiarism Notice:
 /// The code in this file comes from file intensity_server.h
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
-/// New variables or methods of class RadioNuclearMapperServer are marked with the comment "RH".
+/// New/edited variables or methods of class RadioNuclearMapperServer are marked with the comment "RH".
 
 #ifndef VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 #define VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_

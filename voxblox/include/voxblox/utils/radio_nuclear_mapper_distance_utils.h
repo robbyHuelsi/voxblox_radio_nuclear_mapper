@@ -1,7 +1,7 @@
 /// Plagiarism Notice:
 /// The code in this file comes from file distance_utils.h
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
-/// New lines of code are marked with the comment "RH".
+/// New/edited lines of code are marked with the comment "RH".
 
 #ifndef VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_DISTANCE_UTILS_H_
 #define VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_DISTANCE_UTILS_H_
