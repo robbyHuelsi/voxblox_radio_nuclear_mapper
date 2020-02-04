@@ -6,10 +6,11 @@
 #ifndef VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 #define VOXBLOX_ROS_RADIO_NUCLEAR_MAPPER_SERVER_H_
 
-#include "voxblox_ros/tsdf_server.h"
 #include "voxblox/core/common.h"
-#include "voxblox/integrator/radio_nuclear_mapper_integrator.h"
-#include "voxblox/utils/radio_nuclear_mapper_color_maps.h"
+#include "voxblox/integrator/radio_nuclear_mapper_integrator.h" /// RH
+#include "voxblox/utils/radio_nuclear_mapper_color_maps.h" /// RH
+#include "voxblox_ros/tsdf_server.h"
+#include "voxblox_ros/radio_nuclear_mapper_ptcloud_vis.h" /// RH
 #include <abc_msgs_fkie/MeasurementRaw.h>
 #include <std_msgs/String.h>
 
@@ -43,7 +44,7 @@ namespace voxblox {
     protected:
       /// Intensity layer, integrator, and color maps, all related to storing
       /// and visualizing intensity data.
-      std::shared_ptr<Layer<IntensityVoxel>> radiation_layer_;
+      std::shared_ptr<Layer<RadiationVoxel>> radiation_layer_;
       std::unique_ptr<RadioNuclearMapperIntegrator> radiation_integrator_;
 
       /// Parameters for radiological nuclear mapper (whole block: RH)
@@ -90,9 +91,9 @@ namespace voxblox {
       /// whole block: RH
       void calcIntensity(float sensor_value, float distance,
                          RDFType& rad_dist_func, bool use_logarithm, float& intensity);
-      Color getColorForVoxelPointer(const IntensityVoxel* voxel, const std::shared_ptr<ColorMap>& color_map,
+      Color getColorForVoxelPointer(const RadiationVoxel* voxel, const std::shared_ptr<ColorMap>& color_map,
                                     RDFType& rad_dist_func, bool use_logarithm);
-      void recolorVoxbloxMeshMsgByRadiationIntensity(const Layer<IntensityVoxel>& intensity_layer,
+      void recolorVoxbloxMeshMsgByRadiationIntensity(const Layer<RadiationVoxel>& intensity_layer,
                                                      const std::shared_ptr<ColorMap>& color_map,
                                                      RDFType& rad_dist_func, bool use_logarithm,
                                                      voxblox_msgs::Mesh* mesh_msg);

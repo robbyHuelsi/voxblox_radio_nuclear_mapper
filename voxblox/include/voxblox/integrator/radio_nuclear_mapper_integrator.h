@@ -15,11 +15,11 @@
 
 #include "voxblox/core/layer.h"
 #include "voxblox/core/voxel.h"
+#include "voxblox/core/radio_nuclear_mapper_voxel.h" /// RH
 #include "voxblox/core/common.h"
 #include "voxblox/integrator/integrator_utils.h"
 #include "voxblox/utils/timing.h"
-
-#include "voxblox/utils/radio_nuclear_mapper_distance_utils.h"
+#include "voxblox/utils/radio_nuclear_mapper_distance_utils.h" /// RH
 
 namespace voxblox {
 
@@ -33,7 +33,7 @@ class RadioNuclearMapperIntegrator {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
-                               Layer<IntensityVoxel>* intensity_layer);
+                               Layer<RadiationVoxel>* radiation_layer); /// RH
 
   // Set the max distance for projecting into the TSDF layer.
   void setMaxDistance(const FloatingPoint max_distance) {
@@ -42,7 +42,7 @@ class RadioNuclearMapperIntegrator {
   FloatingPoint getMaxDistance() const { return max_distance_; }
 
   /**
-   * Integrates intensities into the intensity layer by projecting normalized
+   * Integrates intensities into the radiation layer by projecting normalized
    * bearing vectors (in the WORLD coordinate frame) from the origin (also in
    * the world coordinate frame) into the TSDF layer, and then setting the
    * intensities near the surface boundaries.
@@ -56,12 +56,12 @@ class RadioNuclearMapperIntegrator {
   FloatingPoint max_distance_;
 
   // Number of voxels to propagate from the surface along the bearing vector.
-  int intensity_prop_voxel_radius_;
+  int radiation_prop_voxel_radius_;
 
   const Layer<TsdfVoxel>& tsdf_layer_;
-  Layer<IntensityVoxel>* intensity_layer_;
+  Layer<RadiationVoxel>* radiation_layer_; /// RH
 
-  void updateIntensityVoxel(voxblox::IntensityVoxel& voxel, const float in_intensity, const float in_distance);  /// RH
+  void updateRadiationVoxel(voxblox::RadiationVoxel& voxel, const float in_intensity, const float in_distance);  /// RH
 };
 
 }  // namespace voxblox

@@ -13,7 +13,7 @@ namespace voxblox {
     /// To recolor und publish cached parts of mesh, turn cache_mesh_ on
     cache_mesh_ = true;
 
-    radiation_layer_.reset(new Layer<IntensityVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
+    radiation_layer_.reset(new Layer<RadiationVoxel>(tsdf_map_->getTsdfLayer().voxel_size(),
                                                      tsdf_map_->getTsdfLayer().voxels_per_side()));
     radiation_integrator_.reset(new RadioNuclearMapperIntegrator(tsdf_map_->getTsdfLayer(),
                                                                  radiation_layer_.get()));
@@ -273,13 +273,13 @@ namespace voxblox {
     }
   }
 
-  inline Color RadioNuclearMapperServer::getColorForVoxelPointer(const IntensityVoxel* voxel,
+  inline Color RadioNuclearMapperServer::getColorForVoxelPointer(const RadiationVoxel* voxel,
                                                           const std::shared_ptr<ColorMap>& color_map,
                                                           RDFType& rad_dist_func, const bool use_logarithm){
     Color c;
     if (voxel != nullptr) {
       float intensity;
-      calcIntensity(voxel->intensity, voxel->weight, rad_dist_func, use_logarithm, intensity);
+      calcIntensity(voxel->intensity, voxel->distance, rad_dist_func, use_logarithm, intensity);
       c = color_map->colorLookup(intensity);
     } else {
       /// If voxel cannot found (no voxel at requested position) color black
@@ -289,7 +289,7 @@ namespace voxblox {
   }
 
   inline void RadioNuclearMapperServer::recolorVoxbloxMeshMsgByRadiationIntensity(
-      const Layer<IntensityVoxel>& intensity_layer,
+      const Layer<RadiationVoxel>& intensity_layer,
       const std::shared_ptr<ColorMap>& color_map,
       RDFType& rad_dist_func, const bool use_logarithm,
       voxblox_msgs::Mesh* mesh_msg) {
@@ -318,7 +318,7 @@ namespace voxblox {
 
         /// Get color c from voxel v at position p
         Point p = Point(mesh_x, mesh_y, mesh_z);
-        const IntensityVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
+        const RadiationVoxel* voxel = intensity_layer.getVoxelPtrByCoordinates(p);
         Color c = getColorForVoxelPointer(voxel, color_map, rad_dist_func, use_logarithm);
 
         /// Update mesh message color
@@ -382,7 +382,7 @@ namespace voxblox {
 
       /// Recolor mesh
       Point p = mesh.vertices[i];
-      const IntensityVoxel* voxel = radiation_layer_->getVoxelPtrByCoordinates(p);
+      const RadiationVoxel* voxel = radiation_layer_->getVoxelPtrByCoordinates(p);
       Color c = getColorForVoxelPointer(voxel, export_color_map, rad_dist_func, use_logarithm);
       mesh.colors[i] = c;
     }
@@ -423,7 +423,7 @@ namespace voxblox {
     /// Create a pointcloud with radiation = intensity.
     pcl::PointCloud<pcl::PointXYZI> pointcloud;
 
-    createIntensityPointcloudFromIntensityLayer(*radiation_layer_, &pointcloud);
+    createRadiationPointcloudFromRadiationLayer(*radiation_layer_, &pointcloud);
 
     pointcloud.header.frame_id = world_frame_;
     radiation_pointcloud_pub_.publish(pointcloud);

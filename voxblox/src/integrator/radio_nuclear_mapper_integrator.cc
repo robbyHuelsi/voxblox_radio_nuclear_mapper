@@ -8,11 +8,11 @@
 
 namespace voxblox {
   RadioNuclearMapperIntegrator::RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
-                                                             Layer<IntensityVoxel>* intensity_layer)
+                                                             Layer<RadiationVoxel>* radiation_layer)
       : max_distance_(5.0),
-        intensity_prop_voxel_radius_(2),
+        radiation_prop_voxel_radius_(2),
         tsdf_layer_(tsdf_layer),
-        intensity_layer_(intensity_layer){}
+        radiation_layer_(radiation_layer){}
 
   void RadioNuclearMapperIntegrator::addRadiationSensorValueBearingVectors(const Point& origin,
                                                                            const Pointcloud& bearing_vectors,
@@ -36,40 +36,39 @@ namespace voxblox {
 
       // Now look up the matching voxels in the intensity layer and mark them.
       // Let's just start with 1.
-      Block<IntensityVoxel>::Ptr block_ptr =
-          intensity_layer_->allocateBlockPtrByCoordinates(surface_intersection);
-      IntensityVoxel& voxel =
+      Block<RadiationVoxel>::Ptr block_ptr =
+          radiation_layer_->allocateBlockPtrByCoordinates(surface_intersection);
+      RadiationVoxel& voxel =
           block_ptr->getVoxelByCoordinates(surface_intersection);
 
       /// Update intensity and confidence if needed (RH)
-      updateIntensityVoxel(voxel, radiation_sensor_value, distance);
+      updateRadiationVoxel(voxel, radiation_sensor_value, distance);
 
       // Now check the surrounding voxels along the bearing vector. If they have
       // never been observed, then fill in their value. Otherwise don't.
       Point close_voxel = surface_intersection;
-      for (int voxel_offset = -intensity_prop_voxel_radius_;
-           voxel_offset <= intensity_prop_voxel_radius_; voxel_offset++) {
+      for (int voxel_offset = -radiation_prop_voxel_radius_;
+           voxel_offset <= radiation_prop_voxel_radius_; voxel_offset++) {
         close_voxel =
             surface_intersection + bearing_vectors[i] * voxel_offset * voxel_size;
-        Block<IntensityVoxel>::Ptr new_block_ptr =
-            intensity_layer_->allocateBlockPtrByCoordinates(close_voxel);
-        IntensityVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
+        Block<RadiationVoxel>::Ptr new_block_ptr =
+            radiation_layer_->allocateBlockPtrByCoordinates(close_voxel);
+        RadiationVoxel& new_voxel = block_ptr->getVoxelByCoordinates(close_voxel);
 
         /// Update intensity and weight if needed (RH)
-        updateIntensityVoxel(new_voxel, radiation_sensor_value, distance);
+        updateRadiationVoxel(new_voxel, radiation_sensor_value, distance);
       }
     }
   }
 
-  void RadioNuclearMapperIntegrator::updateIntensityVoxel(voxblox::IntensityVoxel& voxel,
+  void RadioNuclearMapperIntegrator::updateRadiationVoxel(voxblox::RadiationVoxel& voxel,
                                                               const float in_intensity, const float in_distance){
-    /// Using weight property of a voxel as distance value
-    /// If distance is lower (so confidence is higher) than the stored one, update weight and intensity
+    /// If distance is lower (so confidence is higher) than the stored one, update distance and intensity
     /// If distance is equal to the stored one, update intensity, if new one is higher (pessimistic assumption)
-    if (in_distance < voxel.weight) {
-      voxel.weight = in_distance;
+    if (in_distance < voxel.distance) {
+      voxel.distance = in_distance;
       voxel.intensity = in_intensity;
-    } else if (in_distance == voxel.weight){
+    } else if (in_distance == voxel.distance){
       if (in_intensity > voxel.intensity) {
         voxel.intensity = in_intensity;
       }
