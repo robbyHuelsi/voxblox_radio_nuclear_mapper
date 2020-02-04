@@ -1,10 +1,10 @@
 /// Plagiarism Notice:
 /// The code in this file comes from file color_maps.h (in particular from class IronbowColorMap)
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
-/// New/edited lines of code are marked with the comment "RH".
+/// New/edited lines of code are marked with the comment "RH" (except simple renaming "intensity" to "radiation" etc.).
 
-#ifndef VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_COLOR_MAPS_H_ /// RH
-#define VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_COLOR_MAPS_H_ /// RH
+#ifndef VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_COLOR_MAPS_H_
+#define VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_COLOR_MAPS_H_
 
 #include <algorithm>
 #include <vector>
@@ -16,7 +16,7 @@
 
 namespace voxblox {
 
-  class TrafficLightColorMap : public ColorMap { /// RH
+  class TrafficLightColorMap : public ColorMap {
   public:
     TrafficLightColorMap() : ColorMap() {
       palette_colors_.push_back(Color(0, 255, 0)); /// green (RH)
@@ -46,4 +46,4 @@ namespace voxblox {
 
 }  // namespace voxblox
 
-#endif // VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_COLOR_MAPS_H_ (RH)
+#endif // VOXBLOX_UTILS_RADIO_NUCLEAR_MAPPER_COLOR_MAPS_H_

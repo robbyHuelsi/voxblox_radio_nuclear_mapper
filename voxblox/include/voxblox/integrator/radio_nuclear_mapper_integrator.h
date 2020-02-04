@@ -1,7 +1,7 @@
 /// Plagiarism Notice:
 /// The code in this file comes from file intensity_integrator.h
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
-/// New/edited variables or methods of class RadioNuclearMapperIntegrator are marked with the comment "RH".
+/// New/edited lines of code are marked with the comment "RH" (except simple renaming "intensity" to "radiation" etc.).
 
 #ifndef VOXBLOX_INTEGRATOR_RADIO_NUCLEAR_MAPPER_INTEGRATOR_H_
 #define VOXBLOX_INTEGRATOR_RADIO_NUCLEAR_MAPPER_INTEGRATOR_H_
@@ -33,7 +33,7 @@ class RadioNuclearMapperIntegrator {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   RadioNuclearMapperIntegrator(const Layer<TsdfVoxel>& tsdf_layer,
-                               Layer<RadiationVoxel>* radiation_layer); /// RH
+                               Layer<RadiationVoxel>* radiation_layer);
 
   // Set the max distance for projecting into the TSDF layer.
   void setMaxDistance(const FloatingPoint max_distance) {
@@ -59,7 +59,7 @@ class RadioNuclearMapperIntegrator {
   int radiation_prop_voxel_radius_;
 
   const Layer<TsdfVoxel>& tsdf_layer_;
-  Layer<RadiationVoxel>* radiation_layer_; /// RH
+  Layer<RadiationVoxel>* radiation_layer_;
 
   void updateRadiationVoxel(voxblox::RadiationVoxel& voxel, const float in_intensity, const float in_distance);  /// RH
 };

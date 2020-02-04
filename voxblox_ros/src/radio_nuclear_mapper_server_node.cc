@@ -1,6 +1,7 @@
 /// Plagiarism Notice:
 /// The code in this file comes from file intensity_server_node.cc
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
+/// New/edited lines of code are marked with the comment "RH" (except simple renaming "intensity" to "radiation" etc.).
 
 #include "voxblox_ros/radio_nuclear_mapper_server.h"
 

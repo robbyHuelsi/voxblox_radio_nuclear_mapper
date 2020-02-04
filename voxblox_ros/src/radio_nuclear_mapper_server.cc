@@ -2,7 +2,8 @@
 /// The code in this file comes from file intensity_server.cc
 /// and has been adapted for the special purpose of radiation mapping by Robert Hülsmann.
 /// New/edited variables or methods of class RadioNuclearMapperServer are marked with the comment "RH" IN HEADER FILE.
-/// IN ADDITION, new/edited lines of code in adopted methods are marked in the same way IN THIS FILE.
+/// IN ADDITION, new/edited lines of code in adopted methods are marked in the same way IN THIS FILE
+/// (except simple renaming "intensity" to "radiation" etc.).
 
 #include "voxblox_ros/radio_nuclear_mapper_server.h"
 
