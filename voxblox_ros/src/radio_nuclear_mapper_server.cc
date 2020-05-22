@@ -277,40 +277,47 @@ namespace voxblox {
     ROS_INFO_STREAM("Color map value range is: [" << minimum << ", " << maximum << "]");
   }
 
-  void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& bearing_vectors) {
-    /// Idea from "A New Computationally Effifficient Method for Spacing n Points on a Sphere"
-    /// by Jonathan Kogan, Columbia Grammar and Preparatory School, New York
-    /// https://scholar.rose-hulman.edu/cgi/viewcontent.cgi?article=1387&context=rhumj
+void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& bearing_vectors) {
+  /// Idea from "A New Computationally Effifficient Method for Spacing n Points on a Sphere"
+  /// by Jonathan Kogan, Columbia Grammar and Preparatory School, New York
+  /// https://scholar.rose-hulman.edu/cgi/viewcontent.cgi?article=1387&context=rhumj
 
-    // TODO: Add comments
+  ROS_INFO_STREAM("Generating bearing vectors..." << std::flush);
 
-    ROS_INFO_STREAM("Generating bearing vectors..." << std::flush);
+  /// Defining manipulation factor chi,
+  /// first value for s (offset) and step wide for s (increment)
+  double chi = 0.1 + 1.2 * n;
+  double s_offset = -1.0 + 1.0 / (n - 1.0);
+  double s_increment = (2.0 - 2.0 / (n - 1.0)) / (n - 1.0);
 
-    double wtf = 0.1 + 1.2 * n;  // TODO: Rename variables
-    double start = (-1.0 + 1.0 / (n - 1.0));
-    double increment = (2.0 - 2.0 / (n - 1.0)) / (n - 1.0);
-    
-    bearing_vectors.clear();
-    bearing_vectors.reserve(n);
-    double s, phi, theta, x, y, z;
+  bearing_vectors.clear();
+  bearing_vectors.reserve(n);
+  double s, phi, theta, x, y, z;
 
-    std::stringstream vec_ss;
-    vec_ss << "[";
-    for (int j = 0; j < n; j++) {
-      s = start + (double)j * increment;
-      phi = s * wtf;
-      theta = M_PI / 2.0 * copysign(1, s) * (1.0 - sqrt(1.0 - abs(s)));
-      x = cos(phi) * cos(theta);
-      y = sin(phi) * cos(theta);
-      z = sin(theta);
-      bearing_vectors.push_back(Point(x, y, z));
-      vec_ss << "(" << x << "," << y << "," << z << (j == n-1?")":"),");
-    }
-    vec_ss << "]";
+  std::stringstream vec_ss;
+  vec_ss << "[";
 
-    std::cout <<" Done." << std::endl;
-//    ROS_INFO_STREAM(vec_ss.str() << std::endl);
+  /// Iterate over i (0, 1, ..., n-1) or rather over s (-1, ..., 1)
+  for (int i = 0; i < n; i++) {
+    s = s_offset + (double)i * s_increment;
+
+    /// spherical coordinates
+    phi = s * chi;
+    theta = M_PI / 2.0 * copysign(1, s) * (1.0 - sqrt(1.0 - abs(s)));
+
+    /// 3D coordinates
+    x = cos(phi) * cos(theta);
+    y = sin(phi) * cos(theta);
+    z = sin(theta);
+
+    bearing_vectors.push_back(Point(x, y, z));
+    vec_ss << "(" << x << "," << y << "," << z << (i == n-1?")":"),");
   }
+  vec_ss << "]";
+
+  std::cout <<" Done." << std::endl;
+//    ROS_INFO_STREAM(vec_ss.str() << std::endl);
+}
 
   inline float RadioNuclearMapperServer::calcIntensity(const float sensor_value, const float distance,
                                                        const RDFType& rad_dist_func, const bool use_logarithm) {
