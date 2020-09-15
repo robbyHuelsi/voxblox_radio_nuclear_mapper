@@ -55,7 +55,9 @@ Ensure `roscore` is running. Then you need six additional terminal windows. Exec
 3. (Only if a pointcloud filter exists) `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch`
 4. `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_XXXX.launch`
 5. `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrichXXXX_mesh.rviz`
-6. `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash`
+6. `rosparam set use_sim_time true && cd /path/to/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash` *
+
+\* Adjust `/path/to/bags`
 
 #### Examples
 Ensure `roscore` is running.
