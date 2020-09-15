@@ -13,9 +13,9 @@ Before you start, make sure that you have selected the right branches.
 | **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
 ## How To Run 3D Radiation Mapper?
-Decide for one ENRICH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
+**TL/DR:** [Use this](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#alternative-use-the-super-cool-all-in-one-terminator-start-script)
 
-**TL/DR:** [Use this](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#alternative-use-the-super-cool-all-in-one-terminator-start-script).
+Decide for one ENRICH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
 
 ### Launch Files
 
@@ -38,7 +38,7 @@ This step is **only** required if only a single `static_tf` message in the bag f
 - ENRICH 2017: No
 - ENRICH 2019: Yes ([vlp16_self_filter.launch](https://git.sim.informatik.tu-darmstadt.de/drz/drz_telemax_launch/-/blob/master/drz_telemax_onboard_launch/launch/lidar_proc/vlp16_self_filter.launch))
 
-Keep the path to the launch file in mind for later.
+Keep the launch file in mind for later.
 
 #### Pro Tip: Use predefined RVIZ configurations
 Also in branch **radio_nuclear_mapper** of repository **hector_vehicle_launch** are a few prepared .rviz files these describe the configuration of [RVIZ](http://wiki.ros.org/rviz) windows:
@@ -52,11 +52,13 @@ Ensure `roscore` is running. Then you need six additional terminal windows. Exec
 
 1. `roslaunch robot_postproc_launch play_with_recorded_tf.launc`
 2. (Only if a static tf publisher is required)`roslaunch robot_postproc_launch static_tf_XXXX.launch`
-3. (For ENRICH 2019)
+3. (Only if a pointcloud filter exists) `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch`
 3. `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch`
 4. `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_2017.launch`
 5. `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2019_mesh.rviz`
 6. `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash`
+
+#### Examples
 
 ### ALTERNATIVE: Use the Super Cool All In One Terminator Start Script
 
