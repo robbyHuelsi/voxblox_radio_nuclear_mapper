@@ -1,4 +1,4 @@
-# Radio Nuclear Mapper in Voxblox
+# 3D Radiation Mapper with Voxblox
 This branch is used to map radiation intensities into a 3D environmental representation. This is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
 
 ![rnm_example_gif](readme_files/rnm_mesh.gif)
