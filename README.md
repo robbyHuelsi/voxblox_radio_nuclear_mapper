@@ -1,16 +1,17 @@
 # Radio Nuclear Mapper in Voxblox
-This branch is used to map radiation data into a 3D environmental representation. This is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
+This branch is used to map radiation intensities into a 3D environmental representation. This is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
 
+![rnm_example_gif](readme_files/rnm_mesh.gif)
 
 
 ## Requirements
 Before you start, make sure that you have selected the right branches.
 
-|                Repository               |                  Branch                 |
-|:---------------------------------------:|:---------------------------------------:|
-| **hector_voxblox**<br>(this repository) | `radio_nuclear_mapper`<br>(this branch) |
-|     **radiological_nuclear_mapper**     |                `voxblox`                |
-|        **hector_vehicle_launch**        |      `radiological_nuclear_mapper`      |
+| Repository | Branch |
+|:-:|:-:|
+| **voxblox**<br>(this repository) | [`radio_nuclear_mapper`](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/tree/radio_nuclear_mapper)<br>(this branch) |
+| **radiological_nuclear_mapper** | [`voxblox`](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiological_nuclear_mapper) |
+| **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
 
 # Voxblox
