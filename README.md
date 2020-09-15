@@ -71,7 +71,7 @@ Ensure `roscore` is running.
 | 5 | `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2019_mesh.rviz` | `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2019_mesh.rviz` | `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2017_mesh.rviz` |
 | 6* | `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash` | `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash` | `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2017/final2/npp && rosbag play *.bag --clock -s 780 /spin_laser/vlp16:=/spin_laser/vlp16_trash` |
 
-/* Adjust the path to the folder where the bag files are stored in.
+\* Adjust the path to the folder where the bag files are stored in.
 
 ### ALTERNATIVE: Use the Super Cool All In One Terminator Start Script
 
