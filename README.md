@@ -3,7 +3,6 @@ This branch is used to map radiation intensities into a 3D environmental represe
 
 ![rnm_example_gif](readme_files/rnm_mesh.gif)
 
-
 ## Requirements
 Before you start, make sure that you have selected the right branches.
 
@@ -13,6 +12,15 @@ Before you start, make sure that you have selected the right branches.
 | **radiological_nuclear_mapper** | [`voxblox`](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiological_nuclear_mapper) |
 | **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
+## How to run 3D Radiation Mapper?
+
+### Launch Files
+
+The launch files are located in branch **radio_nuclear_mapper** of repository **hector_vehicle_launch**:
+
+- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch) (for bag files of ENRICH 2017)
+- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch) (for bag files of ENRICH 2019 Run 1)
+- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_2.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_2.launch) (for bag files of ENRICH 2019 Run 2)
 
 # Voxblox
 
