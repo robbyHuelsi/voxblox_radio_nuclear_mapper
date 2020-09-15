@@ -53,12 +53,21 @@ Ensure `roscore` is running. Then you need six additional terminal windows. Exec
 1. `roslaunch robot_postproc_launch play_with_recorded_tf.launc`
 2. (Only if a static tf publisher is required)`roslaunch robot_postproc_launch static_tf_XXXX.launch`
 3. (Only if a pointcloud filter exists) `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch`
-3. `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch`
-4. `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_2017.launch`
-5. `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2019_mesh.rviz`
+4. `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_XXXX.launch`
+5. `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrichXXXX_mesh.rviz`
 6. `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash`
 
 #### Examples
+Ensure `roscore` is running.
+
+| Step | ENRICH 2019<br>Step 1 | Enrich 2019<br>Step 2 | ENRICH 2017 |
+|:-:|:-:|:-:|:-:|
+| 1 | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` |
+| 2 |  |  | `roslaunch robot_postproc_launch static_tf_2017.launch` |
+| 3 | `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch` | `roslaunch drz_telemax_onboard_launch vlp16_self_filter.launch` |  |
+| 4 | `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_2019_1.launch` | `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_2019_2.launch` | `roslaunch hector_sensor_proc_launch voxblox_rnm_enrich_2017.launch` |
+| 5 | `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2019_mesh.rviz` | `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2019_mesh.rviz` | `rviz -d ~/hector/src/hector_vehicle_launch/hector_sensor_proc_launch/enrich2017_mesh.rviz` |
+| 6 | `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash` | `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2019/competition_run_1/bags && rosbag play *.bag --clock -r 1 -s 220 /spin_laser/vlp16:=/spin_laser/vlp16_trash` | `rosparam set use_sim_time true && cd /media/psf/Home/enrich/2017/final2/npp && rosbag play *.bag --clock -s 780 /spin_laser/vlp16:=/spin_laser/vlp16_trash` |
 
 ### ALTERNATIVE: Use the Super Cool All In One Terminator Start Script
 
