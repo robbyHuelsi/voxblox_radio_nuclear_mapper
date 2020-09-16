@@ -3,7 +3,7 @@ This branch is used to map radiation intensities into a 3D environmental represe
 
 ![rnm_example_gif](readme_files/rnm_mesh.gif)
 
-## Requirements
+## 1. Requirements
 Before you start, make sure that you have selected the right branches.
 
 | Repository | Branch |
@@ -12,7 +12,7 @@ Before you start, make sure that you have selected the right branches.
 | **radiological_nuclear_mapper** | [`voxblox`](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiological_nuclear_mapper) |
 | **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
-## How To Run 3D Radiation Mapper?
+## 2. How To Run 3D Radiation Mapper?
 **TL;DR:** [Use this](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#prepare)
 
 Decide for one ENRICH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
@@ -78,13 +78,33 @@ That the execution of six commands in six terminals is very time-consuming and g
 
 The command `roscore` is not included here, because `roscore` must be started before the other commands run and that takes some time. But this is not a problem, because you can let `roscore` run all the time while you start and stop Terminator for testing or optimizing the parameters.
 
+![terminator_gif](readme_files/terminator.gif)
+
 #### Prepare
 
 First you have to replace the content of Terminator's config file `~/.config/terminator/config` with the content of the prepared config file [`hector_sensor_proc_launch/enrich_terminator.config`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich_terminator.config) from the repository **hector_vehicle_launch** (branch **radio_nuclear_mapper**).
 
 #### Go!
-Ensure `roscore` is running.
+Ensure `roscore` is running. Open additional terminal and run one of the following commands:
+- `terminator -l enrich2017`
+- `terminator -l enrich2019_1`
+- `terminator -l enrich2019_2`
 
+#### Stop Skript
+
+The easiest way to stop all parallel running commands is to close the new Terminator window via the close button in the upper right.
+
+## 3. How To Export 3D Radiation Mesh?
+
+The 3D radiation mapper has a built-in export function for the created mesh. To export the mesh in the intensity display as it was set in the launch file and displayed in RVIZ, you can use this command in an additional terminal (i.e. also in a unused Terminator child):
+
+`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'all'"` (Pay attention to the double single quotes combination!)
+
+Alternatively, all combinations of the intensity representation can be exported. Six meshes are then saved with the three different distance functions as well as with logarithmic and linear intensity representation. To do this, execute this command:
+
+`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'original'"`
+
+The exported meshes can then be found as .ply files at `~/.ros`.
 
 
 # Voxblox
