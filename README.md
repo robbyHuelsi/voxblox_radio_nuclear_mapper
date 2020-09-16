@@ -125,4 +125,6 @@ The exported meshes can then be found as .ply files at `~/.ros`.
 Within the scope of this project work further software projects have been developed:
 - [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/README.md)
 - Radiation Sensor Extreme Values Extractor
+- ...
+
 (Work in Progress)
