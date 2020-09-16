@@ -96,13 +96,17 @@ The easiest way to stop all parallel running commands is to close the new Termin
 
 ## 3. How To Export 3D Radiation Mesh?
 
-The 3D radiation mapper has a built-in export function for the created mesh. To export the mesh in the intensity display as it was set in the launch file and displayed in RVIZ, you can use this command in an additional terminal (i.e. also in a unused Terminator child):
+The 3D radiation mapper has a built-in export function for the created mesh. Depending on the size of the 3D map it could be CPU-intensive and takes some time. It is advisable to check if ros bags are no longer playing. If they have not finished playing, it is best to pause them. Put the focus in the terminal that plays the bag files and press the spacebar.
+
+To export the mesh in the intensity display as it was set in the launch file and displayed in RVIZ, you can use this command in an additional terminal (i.e. also in a unused Terminator child):
 
 `rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'all'"` (Pay attention to the double single quotes combination!)
 
 Alternatively, all combinations of the intensity representation can be exported. Six meshes are then saved with the three different distance functions as well as with logarithmic and linear intensity representation. To do this, execute this command:
 
 `rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'original'"`
+
+After executing one of the both lines above a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the exporting.) In the terminal that runs the voxblox node you can see the progress of exporting.
 
 The exported meshes can then be found as .ply files at `~/.ros`.
 
