@@ -13,7 +13,7 @@ Before you start, make sure that you have selected the right branches.
 | **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
 ## How To Run 3D Radiation Mapper?
-**TL/DR:** [Use this](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#alternative-use-the-super-cool-all-in-one-terminator-start-script)
+**TL;DR:** [Use this](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/edit/radio_nuclear_mapper/README.md#prepare)
 
 Decide for one ENRICH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
 
@@ -74,8 +74,18 @@ Ensure `roscore` is running.
 \* Adjust the path to the folder where the bag files are stored in.
 
 ### ALTERNATIVE: Use the Super Cool All In One Terminator Start Script
+That the execution of six commands in six terminals is very time-consuming and gets annoying very fast, if you have to do it often, there is a start script for the terminal emulator [Terminator](https://en.wikipedia.org/wiki/GNOME_Terminator), which starts all commands at once.
 
+The command `roscore` is not included here, because `roscore` must be started before the other commands run and that takes some time. But this is not a problem, because you can let `roscore` run all the time while you start and stop Terminator for testing or optimizing the parameters.
+
+#### Prepare
+
+First you have to replace the content of Terminator's config file `~/.config/terminator/config` with the content of the prepared config file [`hector_sensor_proc_launch/enrich_terminator.config`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich_terminator.config) from the repository **hector_vehicle_launch** (branch **radio_nuclear_mapper**).
+
+#### Go!
 Ensure `roscore` is running.
+
+
 
 # Voxblox
 
