@@ -1,5 +1,5 @@
 # 3D Radiation Mapper with Voxblox (Online Mapper)
-This branch is used to map radiation intensities into a 3D environment representation. It is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
+This branch is used to map radiation intensities into a 3D environment representation. Therefore a RNM (radiation nuclear mapper) node was built into Voxblox ([original repository](https://github.com/ethz-asl/voxblox)). It is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
 
 This method is called **online mapping** here, because the mapping can be done while a rescue robot is in operation or after the operation by replaying ROS bag files, which were used to record the operation before.
 
