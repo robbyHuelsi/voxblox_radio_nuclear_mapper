@@ -5,10 +5,10 @@ This method is called **online mapping** here, because the mapping can be done w
 
 ## Table of Content
 
-1. [Requirements](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#1-requirements)
-2. [How to Run 3D Radiation Mapper?](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#2-how-to-run-3d-radiation-mapper)
-3. [How to Export 3D Radiation Mesh?](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#3-how-to-export-3d-radiation-mesh)
-4. [Further Information](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#4-further-information)
+1. [Requirements](#1-requirements)
+2. [How to Run 3D Radiation Mapper?](#2-how-to-run-3d-radiation-mapper)
+3. [How to Export 3D Radiation Mesh?](#3-how-to-export-3d-radiation-mesh)
+4. [Further Information](#4-further-information)
 
 
 ![rnm_example_gif](readme_files/rnm_mesh.gif)
