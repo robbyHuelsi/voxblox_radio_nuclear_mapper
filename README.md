@@ -23,7 +23,7 @@ Before you start, make sure that you have selected the right branches.
 | **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
 ## 2. How to Run 3D Radiation Mapper?
-**TL;DR:** [Use this](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/blob/radio_nuclear_mapper/README.md#prepare)
+**TL;DR:** [Use this](#prepare)
 
 Decide for one ENRICH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
 
