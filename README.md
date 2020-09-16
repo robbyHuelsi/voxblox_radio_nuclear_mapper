@@ -1,5 +1,7 @@
-# 3D Radiation Mapper with Voxblox
-This branch is used to map radiation intensities into a 3D environmental representation. This is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
+# 3D Radiation Mapper with Voxblox (Online Mapper)
+This branch is used to map radiation intensities into a 3D environment representation. It is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
+
+This method is called **online mapping** here, because the mapping can be done while a rescue robot is in operation or after the operation by replaying ROS bag files, which were used to record the operation before.
 
 ## Table of Content
 
@@ -121,5 +123,6 @@ The exported meshes can then be found as .ply files at `~/.ros`.
 ## 4. Further Information
 
 Within the scope of this project work further software projects have been developed:
-
+- [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/README.md)
+- Radiation Sensor Extreme Values Extractor
 (Work in Progress)
