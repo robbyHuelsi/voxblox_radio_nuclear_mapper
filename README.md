@@ -118,11 +118,13 @@ Also all combinations of the intensity representation can be exported with one s
 
 `rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'all'"`
 
-Instead of `"'original'"` or `"'all'"` you can use `"'decreasing'"`, `"'increasing'"` or `"'constant'"` to export one mesh with the corresponding radiation distance function. The colormap will be the trafic light colormap. The setting whether the logarithm should be used to visualize the intensity or not is taken from the launch file.
+Instead of `"'original'"` or `"'all'"` you can use `"'decreasing'"`, `"'increasing'"` or `"'constant'"` to export one mesh with the corresponding radiation distance function. The colormap will be the trafic light colormap. The setting whether the logarithm should be used to visualize the intensity or not is taken from the voxblox launch file.
 
 After executing one of the lines above a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the exporting.) In the terminal that runs the voxblox node you can see the progress of exporting.
 
 The exported meshes can then be found as .ply files at `~/.ros`.
+
+When exporting the meshes, to define the color gradient, the minimum and maximum are redefined according to the extreme values in the generated mesh. These values may differ from the values set in the launch file. This ensures that the whole range of the color map is used.
 
 ## 4. Further Information
 To get a better understanding of the project, you can also read the description of the parameters in the launch files for Voxblox [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch).
