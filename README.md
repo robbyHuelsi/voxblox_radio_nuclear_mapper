@@ -133,5 +133,3 @@ Within the scope of this project work further software projects have been develo
 - [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/README.md)
 - [Radiation Sensor Extreme Values Extractor](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiation_sensor_extreme_values)
 - Offline Mapper
-
-(Work in Progress)
