@@ -112,13 +112,15 @@ The 3D radiation mapper has a built-in export function for the created mesh. Dep
 
 To export the mesh in the intensity display as it was set in the launch file and displayed in RVIZ, you can use this command in an additional terminal (i.e. also in a unused Terminator child):
 
-`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'all'"` (Pay attention to the double single quotes combination!)
+`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'original'"` (Pay attention to the double single quotes combination!)
 
-Alternatively, all combinations of the intensity representation can be exported. Six meshes are then saved with the three different distance functions as well as with logarithmic and linear intensity representation. To do this, execute this command:
+Also all combinations of the intensity representation can be exported with one single command. Six meshes are then saved with the three different distance functions as well as with logarithmic and linear intensity representation. The colormap will be the trafic light colormap. To do this, execute this command:
 
-`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'original'"`
+`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'all'"`
 
-After executing one of the both lines above a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the exporting.) In the terminal that runs the voxblox node you can see the progress of exporting.
+Instead of `"'original'"` or `"'all'"` you can use `"'decreasing'"`, `"'increasing'"` or `"'constant'"` to export one mesh with the corresponding radiation distance function. The colormap will be the trafic light colormap. The setting whether the logarithm should be used to visualize the intensity or not is taken from the launch file.
+
+After executing one of the lines above a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the exporting.) In the terminal that runs the voxblox node you can see the progress of exporting.
 
 The exported meshes can then be found as .ply files at `~/.ros`.
 
