@@ -18,9 +18,9 @@ Before you start, make sure that you have selected the right branches.
 
 | Repository | Branch |
 |:-:|:-:|
-| **voxblox**<br>(this repository) | [`radio_nuclear_mapper`](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/tree/radio_nuclear_mapper)<br>(this branch) |
-| **radiological_nuclear_mapper** | [`voxblox`](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiological_nuclear_mapper) |
-| **hector_vehicle_launch** | [`radiological_nuclear_mapper`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
+| **voxblox**<br>(this repository) | [radio_nuclear_mapper](https://git.sim.informatik.tu-darmstadt.de/hector/hector_voxblox/-/tree/radio_nuclear_mapper)<br>(this branch) |
+| **radiological_nuclear_mapper** | [voxblox](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiological_nuclear_mapper) |
+| **hector_vehicle_launch** | [radiological_nuclear_mapper](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/tree/radiological_nuclear_mapper) |
 
 ## 2. How to Run 3D Radiation Mapper?
 **TL;DR:** [Use this](#prepare)
@@ -30,7 +30,7 @@ Decide for one ENRICH run or create new file(s) for a new run. Make sure you hav
 ### Launch Files
 
 #### Choose the Launch File for Voxblox
-The launch files for Voxblox are located in branch **radio_nuclear_mapper** of repository **hector_vehicle_launch**:
+The launch files for Voxblox are located in branch *radio_nuclear_mapper* of repository *hector_vehicle_launch*:
 
 - [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch) (for bag files of ENRICH 2017)
 - [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch) (for bag files of ENRICH 2019 Run 1)*
@@ -51,7 +51,7 @@ This step is **only** required if only a single `static_tf` message in the bag f
 Keep the launch file in mind for later.
 
 #### Pro Tip: Use predefined RVIZ configurations
-Also in branch **radio_nuclear_mapper** of repository **hector_vehicle_launch** are a few prepared .rviz files these describe the configuration of [RVIZ](http://wiki.ros.org/rviz) windows:
+Also in branch *radio_nuclear_mapper* of repository *hector_vehicle_launch* are a few prepared .rviz files these describe the configuration of [RVIZ](http://wiki.ros.org/rviz) windows:
 
 - [`hector_sensor_proc_launch/enrich2017_mesh.rviz`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich2017_mesh.rviz) (for ENRICH 2017 run)
 - [`hector_sensor_proc_launch/enrich2019_mesh.rviz`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich2019_mesh.rviz) (for both ENRICH 2019 runs)
@@ -92,7 +92,7 @@ The command `roscore` is not included here, because `roscore` must be started be
 
 #### Prepare
 
-First you have to replace the content of Terminator's config file `~/.config/terminator/config` with the content of the prepared config file [`hector_sensor_proc_launch/enrich_terminator.config`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich_terminator.config) from the repository **hector_vehicle_launch** (branch **radio_nuclear_mapper**).
+First you have to replace the content of Terminator's config file `~/.config/terminator/config` with the content of the prepared config file [`hector_sensor_proc_launch/enrich_terminator.config`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich_terminator.config) from the repository *hector_vehicle_launch* (branch *radio_nuclear_mapper*).
 
 #### Go!
 Ensure `roscore` is running. Open additional terminal and run one of the following commands:
