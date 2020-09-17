@@ -38,6 +38,8 @@ The launch files for Voxblox are located in branch *radio_nuclear_mapper* of rep
 
 \* The mesh shown above was created with this data.
 
+[Here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch) is a description of the parameters in launch files. 
+
 #### Choose the Launch File for Static TF Publisher
 This step is **only** required if only a single `static_tf` message in the bag files is published once at the beginning. In this case skipping the first time of a recording will effect, that static transformations are unknown. For ENRICH 2017 thats the case. Therefore do following:
 
@@ -121,6 +123,7 @@ After executing one of the both lines above a single message will published to t
 The exported meshes can then be found as .ply files at `~/.ros`.
 
 ## 4. Further Information
+To get a better understanding of the project, you can also read the description of the parameters in the launch files for Voxblox [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch).
 
 Within the scope of this project work further software projects have been developed:
 - [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/README.md)
