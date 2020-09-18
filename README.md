@@ -130,6 +130,6 @@ When exporting the meshes, to define the color gradient, the minimum and maximum
 To get a better understanding of the project, you can also read the description of the parameters in the launch files for Voxblox [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch).
 
 Within the scope of this project work further software projects have been developed:
-- [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/README.md)
+- [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/generate_static_transformation_publisher)
 - [Radiation Sensor Extreme Values Extractor](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiation_sensor_extreme_values)
 - Offline Mapper
