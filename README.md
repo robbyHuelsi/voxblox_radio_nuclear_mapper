@@ -41,7 +41,7 @@ The launch files for Voxblox are located in branch *radio_nuclear_mapper* of rep
 [Here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch) is a description of the parameters in launch files. 
 
 #### Choose the Launch File for Static TF Publisher
-This step is **only** required if only a single `static_tf` message in the bag files is published once at the beginning. In this case skipping the first time of a recording will effect, that static transformations are unknown. For ENRICH 2017 thats the case. Therefore do following:
+This step is **only** required if only a single message via the ros topic `/tf_static` in the bag files is published once at the beginning. In this case skipping the first time of a recording will effect, that static transformations are unknown. For ENRICH 2017 thats the case. Therefore do following:
 
 1. [Generate a Static Transformation Publisher](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/README.md) or choose [static_tf_2017.launch](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/static_tf_2017.launch)
 2. Copy the launch file to directory `~/hector/src/robot_launch/robot_postproc_launch/launch`
