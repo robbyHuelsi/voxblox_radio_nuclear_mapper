@@ -1,5 +1,5 @@
 # 3D Radiation Mapper with Voxblox (Online Mapper)
-This branch is used to map radiation intensities into a 3D environment representation. Therefore a RNM (radiation nuclear mapper) node was built into Voxblox ([original repository](https://github.com/ethz-asl/voxblox)). It is used e.g. for [ENRICH](https://enrich.european-robotics.eu).
+This branch is used to map radiation intensities into a 3D environment representation. Therefore a RNM (radiation nuclear mapper) node was built into Voxblox ([original repository](https://github.com/ethz-asl/voxblox)). It is used e.g. for [EnRicH](https://enrich.european-robotics.eu).
 
 This method is called **online mapping** here, because the mapping can be done while a rescue robot is in operation or after the operation by replaying ROS bag files, which were used to record the operation before.
 
@@ -25,38 +25,38 @@ Before you start, make sure that you have selected the right branches.
 ## 2. How to Run 3D Radiation Mapper?
 **TL;DR:** [Use this](#prepare)
 
-Decide for one ENRICH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
+Decide for one EnRicH run or create new file(s) for a new run. Make sure you have the corresponding bag files. If you have all required files collected continue with the instructions for manual or automated start.
 
 ### Launch Files
 
 #### Choose the Launch File for Voxblox
 The launch files for Voxblox are located in branch *radio_nuclear_mapper* of repository *hector_vehicle_launch*:
 
-- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch) (for bag files of ENRICH 2017)
-- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch) (for bag files of ENRICH 2019 Run 1)*
-- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_2.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_2.launch) (for bag files of ENRICH 2019 Run 2)
+- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2017.launch) (for bag files of EnRicH 2017)
+- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_1.launch) (for bag files of EnRicH 2019 Run 1)*
+- [`hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_2.launch`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/voxblox_rnm_enrich_2019_2.launch) (for bag files of EnRicH 2019 Run 2)
 
 \* The mesh shown above was created with this data.
 
 [Here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch) is a description of the parameters in launch files. 
 
 #### Choose the Launch File for Static TF Publisher
-This step is **only** required if only a single message via the ros topic `/tf_static` in the bag files is published once at the beginning. In this case skipping the first time of a recording will effect, that static transformations are unknown. For ENRICH 2017 thats the case. Therefore do following:
+This step is **only** required if only a single message via the ros topic `/tf_static` in the bag files is published once at the beginning. In this case skipping the first time of a recording will effect, that static transformations are unknown. For EnRicH 2017 thats the case. Therefore do following:
 
 1. [Generate a Static Transformation Publisher](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/generate_static_transformation_publisher) or choose [static_tf_2017.launch](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/static_tf_2017.launch)
 2. Copy the launch file to directory `~/hector/src/robot_launch/robot_postproc_launch/launch`
 
 #### Is there a LIDAR pointcloud self filter?
-- ENRICH 2017: No
-- ENRICH 2019: Yes ([vlp16_self_filter.launch](https://git.sim.informatik.tu-darmstadt.de/drz/drz_telemax_launch/-/blob/master/drz_telemax_onboard_launch/launch/lidar_proc/vlp16_self_filter.launch))
+- EnRicH 2017: No
+- EnRicH 2019: Yes ([vlp16_self_filter.launch](https://git.sim.informatik.tu-darmstadt.de/drz/drz_telemax_launch/-/blob/master/drz_telemax_onboard_launch/launch/lidar_proc/vlp16_self_filter.launch))
 
 Keep the launch file in mind for later.
 
 #### Pro Tip: Use predefined RVIZ configurations
 Also in branch *radio_nuclear_mapper* of repository *hector_vehicle_launch* are a few prepared .rviz files these describe the configuration of [RVIZ](http://wiki.ros.org/rviz) windows:
 
-- [`hector_sensor_proc_launch/enrich2017_mesh.rviz`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich2017_mesh.rviz) (for ENRICH 2017 run)
-- [`hector_sensor_proc_launch/enrich2019_mesh.rviz`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich2019_mesh.rviz) (for both ENRICH 2019 runs)
+- [`hector_sensor_proc_launch/enrich2017_mesh.rviz`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich2017_mesh.rviz) (for EnRicH 2017 run)
+- [`hector_sensor_proc_launch/enrich2019_mesh.rviz`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich2019_mesh.rviz) (for both EnRicH 2019 runs)
 
 ### Start Manually
 
@@ -74,7 +74,7 @@ Ensure `roscore` is running. Then you need six additional terminal windows. Exec
 #### Examples
 Ensure `roscore` is running.
 
-| Step | ENRICH 2019<br>Step 1 | Enrich 2019<br>Step 2 | ENRICH 2017 |
+| Step | EnRicH 2019<br>Run 1 | EnRicH 2019<br>Run 2 | EnRicH 2017 |
 |:-:|:-:|:-:|:-:|
 | 1 | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` |
 | 2 |  |  | `roslaunch robot_postproc_launch static_tf_2017.launch` |
@@ -129,7 +129,4 @@ When exporting the meshes, to define the color gradient, the minimum and maximum
 ## 4. Further Information
 To get a better understanding of the project, you can also read the description of the parameters in the launch files for Voxblox [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch).
 
-Within the scope of this project work further software projects have been developed:
-- [Static Transformation Publisher Generator](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/generate_static_transformation_publisher)
-- [Radiation Sensor Extreme Values Extractor](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/radiation_sensor_extreme_values)
-- Offline Mapper
+Within the scope of this project work further software projects have been developed. These are collected in the repository [3D Radiation Mapper Tools](https://git.sim.informatik.tu-darmstadt.de/hector/3d_radiation_mapper_tools).
