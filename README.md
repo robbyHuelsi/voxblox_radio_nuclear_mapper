@@ -74,7 +74,7 @@ Ensure `roscore` is running. Then you need six additional terminal windows. Exec
 #### Examples
 Ensure `roscore` is running.
 
-| Step | EnRicH 2019<br>Step 1 | EnRicH 2019<br>Step 2 | EnRicH 2017 |
+| Step | EnRicH 2019<br>Run 1 | EnRicH 2019<br>Run 2 | EnRicH 2017 |
 |:-:|:-:|:-:|:-:|
 | 1 | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` | `roslaunch robot_postproc_launch play_with_recorded_tf.launc` |
 | 2 |  |  | `roslaunch robot_postproc_launch static_tf_2017.launch` |
