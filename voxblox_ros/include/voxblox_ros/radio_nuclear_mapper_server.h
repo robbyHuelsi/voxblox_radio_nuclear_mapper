@@ -14,6 +14,11 @@
 #include <abc_msgs_fkie/MeasurementRaw.h>
 #include <std_msgs/String.h>
 
+#include <jsoncpp/json/json.h>
+#include <jsoncpp/json/reader.h>
+#include <jsoncpp/json/writer.h>
+#include <jsoncpp/json/value.h>
+
 namespace voxblox {
 
   class RadioNuclearMapperServer;
@@ -36,7 +41,7 @@ namespace voxblox {
       /// Batch update (whole block: RH)
       bool generateMesh() override;
       bool generateMesh(const std::string& distance_function_name, bool use_logarithm,
-                        const std::string& color_map_scheme_name);
+                        const std::string& color_map_scheme_name, const std::string& adjust_extr_val);
 
       /// Publishes all available pointclouds.
       void publishPointclouds() override;
@@ -115,6 +120,31 @@ namespace voxblox {
       static float rad_dist_func_decreasing(float distance);
       static float rad_dist_func_constant(float distance);
       static float rad_dist_func_infinity(float distance);
+
+      /// Allowed values (whole block: RH)
+//      const std::string allowed_radiation_distance_function_names_[3] = {"increasing", "decreasing", "constant"};
+//      const std::string allowed_radiation_color_map_scheme_names_[6] = {"rainbow", "inverse_rainbow", "grayscale",
+//                                                                        "inverse_grayscale", "ironbow", "traffic-light"};
+      const std::map<std::string, RDFType>& getRDFMap() {
+        static const auto* map = new std::map<std::string, RDFType>{
+            {"increasing", rad_dist_func_increasing},
+            {"decreasing", rad_dist_func_decreasing},
+            {"constant", rad_dist_func_constant}
+          };
+          return *map;
+      }
+
+      static const std::map<std::string, ColorMap*>& getCMSMap() {
+          static const auto* map = new std::map<std::string, ColorMap*>{
+                  {"rainbow", new RainbowColorMap()},
+                  {"inverse_rainbow", new InverseRainbowColorMap()},
+                  {"grayscale", new GrayscaleColorMap()},
+                  {"inverse_grayscale", new InverseGrayscaleColorMap()},
+                  {"ironbow", new IronbowColorMap()},
+                  {"traffic-light", new TrafficLightColorMap()}
+          };
+          return *map;
+      }
   };
 }  // namespace voxblox
 

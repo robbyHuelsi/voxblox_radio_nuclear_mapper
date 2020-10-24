@@ -123,64 +123,50 @@ namespace voxblox {
 
   bool RadioNuclearMapperServer::setColorMapScheme(const std::string& color_map_scheme_name,
                                                    std::shared_ptr<ColorMap>& color_map){
-    /// Try to select color map scheme by incomming string (this block was mainly copied from tsdf_server.cc)
-    bool color_map_scheme_valid = false;
-    if (color_map_scheme_name == "rainbow") {
-      color_map.reset(new RainbowColorMap());
-      color_map_scheme_valid = true; /// RH
-    } else if (color_map_scheme_name == "inverse_rainbow") {
-      color_map.reset(new InverseRainbowColorMap());
-      color_map_scheme_valid = true; /// RH
-    } else if (color_map_scheme_name == "grayscale") {
-      color_map.reset(new GrayscaleColorMap());
-      color_map_scheme_valid = true; /// RH
-    } else if (color_map_scheme_name == "inverse_grayscale") {
-      color_map.reset(new InverseGrayscaleColorMap());
-      color_map_scheme_valid = true; /// RH
-    } else if (color_map_scheme_name == "ironbow") {
-      color_map.reset(new IronbowColorMap());
-      color_map_scheme_valid = true; /// RH
-    } else if (color_map_scheme_name == "traffic-light") { /// RH
-      color_map.reset(new TrafficLightColorMap()); /// RH
-      color_map_scheme_valid = true; /// RH
-    }
-
-    /// Print hints
-    if (color_map_scheme_valid) {
-      ROS_INFO_STREAM("Color scheme for color map: " << color_map_scheme_name);
-    } else {
+    /// Try to select color map scheme by incomming string (RH)
+    const auto map = getCMSMap();
+    const auto pos = map.find(color_map_scheme_name);
+    if (pos == map.end() ) {
       ROS_ERROR_STREAM("Invalid color scheme for color map: " << color_map_scheme_name);
-      ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': "<<
-                      "rainbow, inverse_rainbow, grayscale, inverse_grayscale, ironbow, traffic-light");
+      /// Generate hint for user
+      std::stringstream allowed_ss = std::stringstream();
+      for(auto it = map.begin(); it != map.end(); ++it) {
+        allowed_ss << it->first << ", ";
+      }
+      ROS_INFO_STREAM("Use one of the following commands for 'intensity_colormap': " << allowed_ss.str().substr(0, allowed_ss.str().length()-2));
+      return false;
+    } else {
+      color_map.reset(pos->second);
+      ROS_INFO_STREAM("Color scheme for color map: " << color_map_scheme_name);
+      return true;
     }
-    return color_map_scheme_valid;
   }
 
   bool RadioNuclearMapperServer::getRadiationDistanceFunctionByName(const std::string& distance_function_name,
                                                                     RDFType& rad_dist_func){
-    /// Check if the incoming string is allowed
-    std::vector<std::string> allowed_funcs = {"increasing", "decreasing", "constant"};
-    if(std::find(allowed_funcs.begin(), allowed_funcs.end(), distance_function_name) == allowed_funcs.end()){
+    /// Try to select radiation distance function by incomming string (RH)
+    const auto map = getRDFMap();
+    const auto pos = map.find(distance_function_name);
+    if (pos == map.end() ) {
       rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_infinity;
-      /// Distance function string is not allowed
-      ROS_ERROR("Radiation distance function is called by a not supported string.");
+      ROS_ERROR_STREAM("Radiation distance function is called by a not supported string: " << distance_function_name);
       /// Generate hint for user
-      std::stringstream allowed_funcs_ss = std::stringstream();
-      for(auto & allowed_func : allowed_funcs) {
-        allowed_funcs_ss << allowed_func << ", ";
+      std::stringstream allowed_ss = std::stringstream();
+      for(auto it = map.begin(); it != map.end(); ++it) {
+        allowed_ss << it->first << ", ";
       }
-      ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " <<
-                      allowed_funcs_ss.str().substr(0, allowed_funcs_ss.str().length()-2));
+      ROS_INFO_STREAM("Use one of the following commands for 'radiation_distance_function': " << allowed_ss.str().substr(0, allowed_ss.str().length()-2));
       return false;
     }else{
       /// Distance function string is allowed -> select the right one
-      if (distance_function_name == "increasing" or distance_function_name == "i"){
-        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_increasing;
-      }else if (distance_function_name == "decreasing" or distance_function_name == "d"){
-        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_decreasing;
-      }else if (distance_function_name == "constant" or distance_function_name == "c"){
-        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_constant;
-      }
+      rad_dist_func = pos->second;
+//      if (distance_function_name == "increasing" or distance_function_name == "i"){
+//        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_increasing;
+//      }else if (distance_function_name == "decreasing" or distance_function_name == "d"){
+//        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_decreasing;
+//      }else if (distance_function_name == "constant" or distance_function_name == "c"){
+//        rad_dist_func = &RadioNuclearMapperServer::rad_dist_func_constant;
+//      }
       ROS_INFO_STREAM("Radiation will map in a radius of " << radiation_max_distance_ <<
                       " meters with the distance function '" << distance_function_name << "'.");
       return true;
@@ -434,11 +420,14 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
 
   bool RadioNuclearMapperServer::generateMesh() {
     /// Apply generateMesh() with preset parameters
-    return generateMesh(radiation_distance_function_name_, radiation_use_logarithm_, radiation_color_map_scheme_name_);
+    return generateMesh(radiation_distance_function_name_,
+                        radiation_use_logarithm_,
+                        radiation_color_map_scheme_name_,
+                        "mesh");
   }
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function_name, const bool use_logarithm,
-                                              const std::string& color_map_scheme_name){
+                                              const std::string& color_map_scheme_name, const std::string& adjust_extr_val){
     timing::Timer generate_mesh_timer("radiation_mesh/generate");
 
     /// Get mesh from parents (TSDF Server) mesh message
@@ -456,10 +445,18 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     /// Create color map with wanted scheme
     std::shared_ptr<ColorMap> export_color_map;
     setColorMapScheme(color_map_scheme_name, export_color_map);
-//    setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
-//                                   radiation_max_distance_, export_color_map);
-    setCMExtrValByExtrValOfVoxelsAtMeshPositions(mesh, *radiation_layer_, rad_dist_func, use_logarithm,
-                                                 ident_str, export_color_map);
+    if (adjust_extr_val == "mesh") {
+      setCMExtrValByExtrValOfVoxelsAtMeshPositions(mesh, *radiation_layer_, rad_dist_func, use_logarithm,
+                                                   ident_str, export_color_map);
+    } else if (adjust_extr_val == "rdf") {
+      setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
+                                     radiation_max_distance_, export_color_map);
+    } else if (adjust_extr_val == "none") {
+      setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_,
+                                     radiation_use_logarithm_, radiation_max_distance_, export_color_map);
+    } else {
+      ROS_ERROR_STREAM("Used extreme value adjustment string unknown");
+    }
 
     /// Recolor mesh
     recolorVoxbloxMeshByRadiationIntensity(*radiation_layer_, export_color_map,
@@ -551,29 +548,96 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     ROS_INFO_STREAM(current_callback_num << ": Done.");
   }
 
-  void RadioNuclearMapperServer::saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg){
+  void RadioNuclearMapperServer::saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg) {
     CHECK(msg);
 
     /// Get value from subscriber message
     std::string message = msg->data;
 
-    ROS_INFO_STREAM("Save Mesh Trigger Message: " << message);
+    /// Parse JSON (Source: https://stackoverflow.com/a/31122041/7439335)
+    Json::Value cmd;
+    Json::Reader reader;
+    bool parsingSuccessful = reader.parse(message, cmd);
+    if (!parsingSuccessful) {
+      ROS_ERROR_STREAM("Failed to parse" << reader.getFormattedErrorMessages());
+    } else {
+      ROS_INFO_STREAM("Save Mesh Trigger Message: " << message);
 
-    if (message == "original") {
-      generateMesh();
-    }else if (message == "constant") {
-      generateMesh("constant", radiation_use_logarithm_, "traffic-light");
-    }else if (message == "increasing") {
-      generateMesh("increasing", radiation_use_logarithm_, "traffic-light");
-    }else if (message == "decreasing") {
-      generateMesh("decreasing", radiation_use_logarithm_, "traffic-light");
-    }else if (message == "all") {
-      const bool use_log_or_not [] = {false, true};
-      const std::string distance_functions[] = {"constant", "increasing", "decreasing"};
-      for (const bool log : use_log_or_not) {
-        for (const std::string& dist_func : distance_functions) {
-          generateMesh(dist_func, log, "traffic-light");
+      Json::Value cmd_rdf = cmd.get("rdf", radiation_distance_function_name_);
+      Json::Value cmd_log = cmd.get("log", radiation_use_logarithm_);
+      Json::Value cmd_cms = cmd.get("cms", radiation_color_map_scheme_name_);
+      Json::Value cmd_aev = cmd.get("aev", "none");
+
+      std::vector<std::string> wanted_rdf_list,
+          wanted_cms_list,
+          wanted_aev_list;
+      std::vector<bool> wanted_log_list;
+
+      if (cmd.isArray()) {
+        /// Parse wanted radiation distance function(s) from message
+        if (cmd_rdf.isArray()) {
+          for (Json::Value::iterator it = cmd_rdf.begin(); it != cmd_rdf.end(); ++it) {
+            wanted_rdf_list.push_back(it->asString());
+          }
+        } else if (cmd_rdf.asString() == "all") {
+          auto map = getRDFMap();
+          for(auto it = map.begin(); it != map.end(); ++it) {
+            wanted_rdf_list.push_back(it->first);
+          }
+        } else if (cmd_rdf.asString() == "original") {
+          wanted_rdf_list = {radiation_distance_function_name_};
+        } else {
+          wanted_rdf_list = {cmd_rdf.asString()};
         }
+
+        /// Parse from message if logarithm is wanted or not or both
+        if (cmd_log.asString() == "all" or cmd_log.asString() == "both") {
+          wanted_log_list = {false, true};
+        } else if (cmd_log.asString() == "original") {
+          wanted_log_list = {radiation_use_logarithm_};
+        } else {
+          wanted_log_list = {cmd_log.asBool()};
+        }
+
+        /// Parse wanted color map scheme(s) from message
+        if (cmd_cms.isArray()) {
+          for (Json::Value::iterator it = cmd_cms.begin(); it != cmd_cms.end(); ++it) {
+            wanted_cms_list.push_back(it->asString());
+          }
+        } else if (cmd_cms.asString() == "all") {
+          auto map = getCMSMap();
+          for(auto it = map.begin(); it != map.end(); ++it) {
+            wanted_cms_list.push_back(it->first);
+          }
+        } else if (cmd_cms.asString() == "original") {
+          wanted_cms_list = {radiation_distance_function_name_};
+        } else {
+          wanted_cms_list = {cmd_cms.asString()};
+        }
+
+        /// Parse from message how color map should be adjusted to extreme values
+        if (cmd_aev.isArray()) {
+          for (Json::Value::iterator it = cmd_aev.begin(); it != cmd_aev.end(); ++it) {
+            wanted_aev_list.push_back(it->asString());
+          }
+        } else if (cmd_aev.asString() == "all") {
+          wanted_aev_list = {"mesh", "rdf", "none"};
+        } else {
+          wanted_aev_list = {cmd_aev.asString()};
+        }
+
+        for (const std::string& aev : wanted_aev_list) {
+          for (const std::string& cms : wanted_cms_list) {
+            for (const bool log : wanted_log_list) {
+              for (const std::string& rdf : wanted_rdf_list) {
+                generateMesh(rdf, log, cms, aev);
+              }
+            }
+          }
+        }
+
+      } else if (cmd.asString() == "original") {
+        generateMesh();
       }
     }
   }
