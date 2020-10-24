@@ -1,7 +1,7 @@
 # 3D Radiation Mapper with Voxblox (Online Mapper)
 This branch is used to map radiation intensities into a 3D environment representation. Therefore a RNM (radiation nuclear mapper) node was built into Voxblox ([original repository](https://github.com/ethz-asl/voxblox)). It is used e.g. for [EnRicH](https://enrich.european-robotics.eu).
 
-This method is called **online mapping** here, because the mapping can be done while a rescue robot is in operation or after the operation by replaying ROS bag files, which were used to record the operation before.
+This method is called **online mapping** here, because the mapping can be done while a rescue robot is in operation or after the operation by replaying ROS bag files, which were used to record the operation before. The following describes the application using bag files.
 
 ## Table of Content
 
@@ -43,7 +43,7 @@ The launch files for Voxblox are located in branch *radio_nuclear_mapper* of rep
 #### Choose the Launch File for Static TF Publisher
 This step is **only** required if only a single message via the ros topic `/tf_static` in the bag files is published once at the beginning. In this case skipping the first time of a recording will effect, that static transformations are unknown. For EnRicH 2017 thats the case. Therefore do following:
 
-1. [Generate a Static Transformation Publisher](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/tree/voxblox/generate_static_transformation_publisher) or choose [static_tf_2017.launch](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/static_tf_2017.launch)
+1. [Generate a Static Transformation Publisher](https://git.sim.informatik.tu-darmstadt.de/hector/3d_radiation_mapper_tools/-/tree/master/static_transformation_publisher_generator) or choose [static_tf_2017.launch](https://git.sim.informatik.tu-darmstadt.de/hector/hector_enrich/-/blob/voxblox/generate_static_transformation_publisher/static_tf_2017.launch)
 2. Copy the launch file to directory `~/hector/src/robot_launch/robot_postproc_launch/launch`
 
 #### Is there a LIDAR pointcloud self filter?
@@ -94,7 +94,7 @@ The command `roscore` is not included here, because `roscore` must be started be
 
 #### Prepare
 
-First you have to replace the content of Terminator's config file `~/.config/terminator/config` with the content of the prepared config file [`hector_sensor_proc_launch/enrich_terminator.config`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich_terminator.config) from the repository *hector_vehicle_launch* (branch *radio_nuclear_mapper*).
+First you have to replace the content of Terminator's config file `~/.config/terminator/config` with the content of the prepared config file [`hector_sensor_proc_launch/enrich_terminator.config`](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/enrich_terminator.config) from the repository *hector_vehicle_launch* (branch *radio_nuclear_mapper*). Adjust the paths to the bag files.
 
 #### Go!
 Ensure `roscore` is running. Open additional terminal and run one of the following commands:
