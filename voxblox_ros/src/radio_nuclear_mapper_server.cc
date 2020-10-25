@@ -187,12 +187,12 @@ namespace voxblox {
    * @param radiation_max_distance
    * @param color_map
    */
-  void RadioNuclearMapperServer::setCMExtrValByMostExtrPossible(const float radiation_msg_val_min,
-                                                                const float radiation_msg_val_max,
-                                                                const RDFType& rad_dist_func,
-                                                                const bool use_logarithm,
-                                                                const float radiation_max_distance,
-                                                                std::shared_ptr<ColorMap>& color_map){
+  std::tuple<float, float> RadioNuclearMapperServer::setCMExtrValByMostExtrPossible(const float radiation_msg_val_min,
+                                                                                    const float radiation_msg_val_max,
+                                                                                    const RDFType& rad_dist_func,
+                                                                                    const bool use_logarithm,
+                                                                                    const float radiation_max_distance,
+                                                                                    std::shared_ptr<ColorMap>& color_map){
     /// Combine values and put them into a vector
     std::vector<float> intensity_extreme_values;
     float radiation_msg_extreme_values[] = {radiation_msg_val_min, radiation_msg_val_max};
@@ -212,6 +212,8 @@ namespace voxblox {
 
     //Print extreme values
     ROS_INFO_STREAM("Color map value range is: [" << intensity_min_value << ", " << intensity_max_value << "]");
+
+    return {intensity_min_value, intensity_max_value};
   }
 
   /**
@@ -224,12 +226,12 @@ namespace voxblox {
    * @param ident_str
    * @param color_map
    */
-  void RadioNuclearMapperServer::setCMExtrValByExtrValOfVoxelsAtMeshPositions(const Mesh& mesh,
-                                                                           const Layer<RadiationVoxel>& radiation_layer,
-                                                                           const RDFType& rad_dist_func,
-                                                                           const bool use_logarithm,
-                                                                           const std::string& ident_str,
-                                                                           std::shared_ptr<ColorMap>& color_map){
+  std::tuple<float, float> RadioNuclearMapperServer::setCMExtrValByExtrValOfVoxelsAtMeshPositions(const Mesh& mesh,
+                                                                                                  const Layer<RadiationVoxel>& radiation_layer,
+                                                                                                  const RDFType& rad_dist_func,
+                                                                                                  const bool use_logarithm,
+                                                                                                  const std::string& ident_str,
+                                                                                                  std::shared_ptr<ColorMap>& color_map){
 
     auto num_mesh_points = float(mesh.size());
     float intensity;
@@ -261,6 +263,8 @@ namespace voxblox {
 
     std::cout << "Set color map value range (" << ident_str << ") done.  " << std::endl;
     ROS_INFO_STREAM("Color map value range is: [" << minimum << ", " << maximum << "]");
+
+    return {minimum, maximum};
   }
 
 void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& bearing_vectors) {
@@ -439,23 +443,33 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     getRadiationDistanceFunctionByName(distance_function_name, rad_dist_func);
 
     /// define a helper string for terminal hints and file name
-    std::string ident_str = distance_function_name + "-func_" + (use_logarithm ? "log" : "no-log") + "_";
-    ident_str += color_map_scheme_name + "-cm";
+    std::string ident_str = distance_function_name + "_" +
+                            (use_logarithm ? "log" : "lin") + "_" +
+                            color_map_scheme_name + "_" +
+                            adjust_extr_val;
 
     /// Create color map with wanted scheme
     std::shared_ptr<ColorMap> export_color_map;
     setColorMapScheme(color_map_scheme_name, export_color_map);
+    float intensity_min_value, intensity_max_value;
     if (adjust_extr_val == "mesh") {
-      setCMExtrValByExtrValOfVoxelsAtMeshPositions(mesh, *radiation_layer_, rad_dist_func, use_logarithm,
+      auto [min, max] = setCMExtrValByExtrValOfVoxelsAtMeshPositions(mesh, *radiation_layer_, rad_dist_func, use_logarithm,
                                                    ident_str, export_color_map);
+      intensity_min_value = min;
+      intensity_max_value = max;
     } else if (adjust_extr_val == "rdf") {
-      setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
+      auto [min, max] = setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
                                      radiation_max_distance_, export_color_map);
+      intensity_min_value = min;
+      intensity_max_value = max;
     } else if (adjust_extr_val == "none") {
-      setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_,
+      auto [min, max] = setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_,
                                      radiation_use_logarithm_, radiation_max_distance_, export_color_map);
+      intensity_min_value = min;
+      intensity_max_value = max;
     } else {
-      ROS_ERROR_STREAM("Used extreme value adjustment string unknown");
+      ROS_ERROR_STREAM("Used extreme value adjustment setting string unknown");
+      return false;
     }
 
     /// Recolor mesh
@@ -473,23 +487,38 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     time_info = localtime(&raw_time);
     strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
     std::string time_str = time_buffer;
-    std::string filename = ident_str + "_" + time_str + ".ply";
+    std::string filename = ident_str + "_" + time_str;
 
     /// Save mesh
     std::cout << "Exporting (" << ident_str << ") ... \r" <<std::flush;
-    const bool success = outputMeshAsPly(filename, mesh);
+    const bool success = outputMeshAsPly(filename + ".ply", mesh);
     std::cout << "Exporting (" << ident_str << ") done." <<std::endl;
     output_mesh_timer.Stop();
 
     if (success) {
-      ROS_INFO("Output file as PLY: %s", filename.c_str());
+      ROS_INFO("Output file as PLY: %s", (filename + ".ply").c_str());
+
+      std::ofstream meta_file;
+      meta_file.open("~/.ros/" + filename + ".json");
+      if (meta_file.is_open())
+      {
+        meta_file << "{\n";
+        meta_file << "\t\"min\": " << intensity_min_value << ",\n";
+        meta_file << "\t\"max\": " << intensity_max_value << ",\n";
+        meta_file << "}\n";
+        meta_file.close();
+        std::cout << "Hello World!" <<std::endl;
+        ROS_INFO_STREAM("Meta data as JSON: " << (filename + ".json").c_str());
+      } else {
+        ROS_ERROR_STREAM("Failed to output meta data as JSON: " << (filename + ".json").c_str());
+      }
     } else {
-      ROS_INFO("Failed to output mesh as PLY: %s", filename.c_str());
+      ROS_ERROR_STREAM("Failed to output mesh as PLY: " << (filename + ".ply").c_str());
     }
 
     ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
 
-    return true;
+    return success;
   }
 
   void RadioNuclearMapperServer::publishPointclouds() {
@@ -561,7 +590,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     if (!parsingSuccessful) {
       ROS_ERROR_STREAM("Failed to parse" << reader.getFormattedErrorMessages());
     } else {
-      ROS_INFO_STREAM("Save Mesh Trigger Message: " << message);
+      ROS_INFO_STREAM("Save mesh trigger message: " << message);
 
       Json::Value cmd_rdf = cmd.get("rdf", radiation_distance_function_name_);
       Json::Value cmd_log = cmd.get("log", radiation_use_logarithm_);
@@ -573,7 +602,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
           wanted_aev_list;
       std::vector<bool> wanted_log_list;
 
-      if (cmd.isArray()) {
+      if (cmd.isObject()) {
         /// Parse wanted radiation distance function(s) from message
         if (cmd_rdf.isArray()) {
           for (Json::Value::iterator it = cmd_rdf.begin(); it != cmd_rdf.end(); ++it) {
@@ -589,15 +618,28 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
         } else {
           wanted_rdf_list = {cmd_rdf.asString()};
         }
+        ROS_INFO_STREAM("Wanted radiation distance function(s): " << vec2str(wanted_rdf_list));
 
         /// Parse from message if logarithm is wanted or not or both
         if (cmd_log.asString() == "all" or cmd_log.asString() == "both") {
           wanted_log_list = {false, true};
         } else if (cmd_log.asString() == "original") {
           wanted_log_list = {radiation_use_logarithm_};
-        } else {
+        } else if (cmd_log.asString() == "true" or
+                   cmd_log.asString() == "True" or
+                   cmd_log.asString() == "TRUE") {
+          wanted_log_list = {true};
+        } else if (cmd_log.asString() == "false" or
+                   cmd_log.asString() == "False" or
+                   cmd_log.asString() == "FALSE") {
+          wanted_log_list = {false};
+        } else if (cmd_log.isBool()){
           wanted_log_list = {cmd_log.asBool()};
+        } else {
+          ROS_ERROR_STREAM("Unknown command for log parameter.");
+          wanted_log_list = {radiation_use_logarithm_};
         }
+        ROS_INFO_STREAM("Wanted lin / log setting(s): " << vec2str(wanted_log_list));
 
         /// Parse wanted color map scheme(s) from message
         if (cmd_cms.isArray()) {
@@ -614,6 +656,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
         } else {
           wanted_cms_list = {cmd_cms.asString()};
         }
+        ROS_INFO_STREAM("Wanted color map scheme(s): " << vec2str(wanted_cms_list));
 
         /// Parse from message how color map should be adjusted to extreme values
         if (cmd_aev.isArray()) {
@@ -625,6 +668,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
         } else {
           wanted_aev_list = {cmd_aev.asString()};
         }
+        ROS_INFO_STREAM("Wanted extreme value adjustment setting(s): " << vec2str(wanted_aev_list));
 
         for (const std::string& aev : wanted_aev_list) {
           for (const std::string& cms : wanted_cms_list) {
@@ -640,6 +684,22 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
         generateMesh();
       }
     }
+  }
+
+  std::string RadioNuclearMapperServer::vec2str(const std::vector<std::string> &v){
+    std::stringstream ss = std::stringstream();
+    for(auto x: v) {
+      ss << x << ", ";
+    }
+    return ss.str().substr(0, ss.str().length()-2);
+  }
+
+  std::string RadioNuclearMapperServer::vec2str(const std::vector<bool> &v){
+    std::vector<std::string> s_v;
+    for(auto x: v) {
+      s_v.push_back(x ? "true" : "false");
+    }
+    return vec2str(s_v);
   }
 
   /**
