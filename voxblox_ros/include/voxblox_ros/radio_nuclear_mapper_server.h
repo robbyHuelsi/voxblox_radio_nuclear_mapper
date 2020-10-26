@@ -84,17 +84,17 @@ namespace voxblox {
       static bool setColorMapScheme(const std::string& color_map_scheme_name, std::shared_ptr<ColorMap>& color_map);
       bool getRadiationDistanceFunctionByName(const std::string& distance_function_name,
                                               RDFType& rad_dist_func);
-      std::tuple<float, float> void setCMExtrValByMostExtrPossible(float radiation_msg_val_min,
-                                                                   float radiation_msg_val_max,
-                                                                   const RDFType& rad_dist_func,
-                                                                   bool use_logarithm,
-                                                                   float radiation_max_distance,
-                                                                   std::shared_ptr<ColorMap>& color_map);
-      std::tuple<float, float> void setCMExtrValByExtrValOfVoxelsAtMeshPositions(const Mesh& mesh,
-                                                                                 const Layer<RadiationVoxel>& radiation_layer,
-                                                                                 const RDFType& rad_dist_func, bool use_logarithm,
-                                                                                 const std::string& ident_str,
-                                                                                 std::shared_ptr<ColorMap>& color_map);
+      std::tuple<float, float> setCMExtrValByMostExtrPossible(float radiation_msg_val_min,
+                                                              float radiation_msg_val_max,
+                                                              const RDFType& rad_dist_func,
+                                                              bool use_logarithm,
+                                                              float radiation_max_distance,
+                                                              std::shared_ptr<ColorMap>& color_map);
+      std::tuple<float, float> setCMExtrValByExtrValOfVoxelsAtMeshPositions(const Mesh& mesh,
+                                                                            const Layer<RadiationVoxel>& radiation_layer,
+                                                                            const RDFType& rad_dist_func, bool use_logarithm,
+                                                                            const std::string& ident_str,
+                                                                            std::shared_ptr<ColorMap>& color_map);
 
       static void generateBearingVectors(int n, Pointcloud& bearing_vectors); /// RH
 
@@ -137,7 +137,7 @@ namespace voxblox {
       }
 
       static const std::map<std::string, ColorMap*>& getCMSMap() {
-          static const auto* map = new std::map<std::string, ColorMap*>{
+          const auto* map = new std::map<std::string, ColorMap*>{
                   {"rainbow", new RainbowColorMap()},
                   {"inverse_rainbow", new InverseRainbowColorMap()},
                   {"grayscale", new GrayscaleColorMap()},

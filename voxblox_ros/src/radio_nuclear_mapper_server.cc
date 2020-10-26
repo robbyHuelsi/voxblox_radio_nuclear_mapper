@@ -432,7 +432,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function_name, const bool use_logarithm,
                                               const std::string& color_map_scheme_name, const std::string& adjust_extr_val){
-    timing::Timer generate_mesh_timer("radiation_mesh/generate");
+    // timing::Timer generate_mesh_timer("radiation_mesh/generate");
 
     /// Get mesh from parents (TSDF Server) mesh message
     Mesh mesh = Mesh(mesh_layer_->block_size(), Point::Zero());
@@ -453,20 +453,11 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     setColorMapScheme(color_map_scheme_name, export_color_map);
     float intensity_min_value, intensity_max_value;
     if (adjust_extr_val == "mesh") {
-      auto [min, max] = setCMExtrValByExtrValOfVoxelsAtMeshPositions(mesh, *radiation_layer_, rad_dist_func, use_logarithm,
-                                                   ident_str, export_color_map);
-      intensity_min_value = min;
-      intensity_max_value = max;
+      std::tie(intensity_min_value, intensity_max_value) = setCMExtrValByExtrValOfVoxelsAtMeshPositions(mesh, *radiation_layer_, rad_dist_func, use_logarithm, ident_str, export_color_map);
     } else if (adjust_extr_val == "rdf") {
-      auto [min, max] = setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm,
-                                     radiation_max_distance_, export_color_map);
-      intensity_min_value = min;
-      intensity_max_value = max;
+      std::tie(intensity_min_value, intensity_max_value) = setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, rad_dist_func, use_logarithm, radiation_max_distance_, export_color_map);
     } else if (adjust_extr_val == "none") {
-      auto [min, max] = setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_,
-                                     radiation_use_logarithm_, radiation_max_distance_, export_color_map);
-      intensity_min_value = min;
-      intensity_max_value = max;
+      std::tie(intensity_min_value, intensity_max_value) = setCMExtrValByMostExtrPossible(radiation_msg_val_min_, radiation_msg_val_max_, radiation_distance_function_, radiation_use_logarithm_, radiation_max_distance_, export_color_map);
     } else {
       ROS_ERROR_STREAM("Used extreme value adjustment setting string unknown");
       return false;
@@ -476,8 +467,8 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     recolorVoxbloxMeshByRadiationIntensity(*radiation_layer_, export_color_map,
                                            rad_dist_func, use_logarithm, ident_str, mesh);
 
-    generate_mesh_timer.Stop();
-    timing::Timer output_mesh_timer("radiation_mesh/output");
+    // generate_mesh_timer.Stop();
+    // timing::Timer output_mesh_timer("radiation_mesh/output");
 
     /// Create file name including function, log, color map and time stamp
     time_t raw_time;
@@ -493,22 +484,21 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     std::cout << "Exporting (" << ident_str << ") ... \r" <<std::flush;
     const bool success = outputMeshAsPly(filename + ".ply", mesh);
     std::cout << "Exporting (" << ident_str << ") done." <<std::endl;
-    output_mesh_timer.Stop();
+    // output_mesh_timer.Stop();
 
     if (success) {
       ROS_INFO("Output file as PLY: %s", (filename + ".ply").c_str());
 
       std::ofstream meta_file;
-      meta_file.open("~/.ros/" + filename + ".json");
+      meta_file.open(filename + ".json");  // "~/.ros/" +
       if (meta_file.is_open())
       {
         meta_file << "{\n";
-        meta_file << "\t\"min\": " << intensity_min_value << ",\n";
-        meta_file << "\t\"max\": " << intensity_max_value << ",\n";
+        meta_file << "\t\"intensity_min_value\": " << intensity_min_value << ",\n";
+        meta_file << "\t\"intensity_max_value\": " << intensity_max_value << ",\n";
         meta_file << "}\n";
         meta_file.close();
-        std::cout << "Hello World!" <<std::endl;
-        ROS_INFO_STREAM("Meta data as JSON: " << (filename + ".json").c_str());
+        // ROS_INFO_STREAM("Meta data exported as JSON: " << (filename + ".json").c_str());
       } else {
         ROS_ERROR_STREAM("Failed to output meta data as JSON: " << (filename + ".json").c_str());
       }
@@ -516,7 +506,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
       ROS_ERROR_STREAM("Failed to output mesh as PLY: " << (filename + ".ply").c_str());
     }
 
-    ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
+    // ROS_INFO_STREAM("Mesh Timings: " << std::endl << timing::Timing::Print());
 
     return success;
   }
@@ -582,106 +572,110 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
 
     /// Get value from subscriber message
     std::string message = msg->data;
+    ROS_INFO_STREAM("Save mesh trigger message: " << message);
 
     /// Parse JSON (Source: https://stackoverflow.com/a/31122041/7439335)
     Json::Value cmd;
     Json::Reader reader;
     bool parsingSuccessful = reader.parse(message, cmd);
     if (!parsingSuccessful) {
-      ROS_ERROR_STREAM("Failed to parse" << reader.getFormattedErrorMessages());
+      if (message == "original") {
+        generateMesh();
+      } else {
+        ROS_ERROR_STREAM("The message does not contain a permitted shortcut, nor is in JSON format");
+        ROS_INFO_STREAM("JSON Error: " << reader.getFormattedErrorMessages());
+      }
     } else {
-      ROS_INFO_STREAM("Save mesh trigger message: " << message);
-
       Json::Value cmd_rdf = cmd.get("rdf", radiation_distance_function_name_);
       Json::Value cmd_log = cmd.get("log", radiation_use_logarithm_);
       Json::Value cmd_cms = cmd.get("cms", radiation_color_map_scheme_name_);
       Json::Value cmd_aev = cmd.get("aev", "none");
 
-      std::vector<std::string> wanted_rdf_list,
-          wanted_cms_list,
+      std::vector<std::string> wanted_rdf_list, wanted_cms_list,
           wanted_aev_list;
       std::vector<bool> wanted_log_list;
 
-      if (cmd.isObject()) {
-        /// Parse wanted radiation distance function(s) from message
-        if (cmd_rdf.isArray()) {
-          for (Json::Value::iterator it = cmd_rdf.begin(); it != cmd_rdf.end(); ++it) {
-            wanted_rdf_list.push_back(it->asString());
-          }
-        } else if (cmd_rdf.asString() == "all") {
-          auto map = getRDFMap();
-          for(auto it = map.begin(); it != map.end(); ++it) {
-            wanted_rdf_list.push_back(it->first);
-          }
-        } else if (cmd_rdf.asString() == "original") {
-          wanted_rdf_list = {radiation_distance_function_name_};
-        } else {
-          wanted_rdf_list = {cmd_rdf.asString()};
+      /// Parse wanted radiation distance function(s) from message
+      if (cmd_rdf.isArray()) {
+        for (Json::Value::iterator it = cmd_rdf.begin(); it != cmd_rdf.end();
+             ++it) {
+          wanted_rdf_list.push_back(it->asString());
         }
-        ROS_INFO_STREAM("Wanted radiation distance function(s): " << vec2str(wanted_rdf_list));
-
-        /// Parse from message if logarithm is wanted or not or both
-        if (cmd_log.asString() == "all" or cmd_log.asString() == "both") {
-          wanted_log_list = {false, true};
-        } else if (cmd_log.asString() == "original") {
-          wanted_log_list = {radiation_use_logarithm_};
-        } else if (cmd_log.asString() == "true" or
-                   cmd_log.asString() == "True" or
-                   cmd_log.asString() == "TRUE") {
-          wanted_log_list = {true};
-        } else if (cmd_log.asString() == "false" or
-                   cmd_log.asString() == "False" or
-                   cmd_log.asString() == "FALSE") {
-          wanted_log_list = {false};
-        } else if (cmd_log.isBool()){
-          wanted_log_list = {cmd_log.asBool()};
-        } else {
-          ROS_ERROR_STREAM("Unknown command for log parameter.");
-          wanted_log_list = {radiation_use_logarithm_};
+      } else if (cmd_rdf.asString() == "all") {
+        auto map = getRDFMap();
+        for (auto it = map.begin(); it != map.end(); ++it) {
+          wanted_rdf_list.push_back(it->first);
         }
-        ROS_INFO_STREAM("Wanted lin / log setting(s): " << vec2str(wanted_log_list));
+      } else if (cmd_rdf.asString() == "original") {
+        wanted_rdf_list = {radiation_distance_function_name_};
+      } else {
+        wanted_rdf_list = {cmd_rdf.asString()};
+      }
+      ROS_INFO_STREAM("Wanted radiation distance function(s): "
+                      << vec2str(wanted_rdf_list));
 
-        /// Parse wanted color map scheme(s) from message
-        if (cmd_cms.isArray()) {
-          for (Json::Value::iterator it = cmd_cms.begin(); it != cmd_cms.end(); ++it) {
-            wanted_cms_list.push_back(it->asString());
-          }
-        } else if (cmd_cms.asString() == "all") {
-          auto map = getCMSMap();
-          for(auto it = map.begin(); it != map.end(); ++it) {
-            wanted_cms_list.push_back(it->first);
-          }
-        } else if (cmd_cms.asString() == "original") {
-          wanted_cms_list = {radiation_distance_function_name_};
-        } else {
-          wanted_cms_list = {cmd_cms.asString()};
+      /// Parse from message if logarithm is wanted or not or both
+      if (cmd_log.asString() == "all" or cmd_log.asString() == "both") {
+        wanted_log_list = {false, true};
+      } else if (cmd_log.asString() == "original") {
+        wanted_log_list = {radiation_use_logarithm_};
+      } else if (cmd_log.asString() == "true" or cmd_log.asString() == "True" or
+                 cmd_log.asString() == "TRUE") {
+        wanted_log_list = {true};
+      } else if (cmd_log.asString() == "false" or
+                 cmd_log.asString() == "False" or
+                 cmd_log.asString() == "FALSE") {
+        wanted_log_list = {false};
+      } else if (cmd_log.isBool()) {
+        wanted_log_list = {cmd_log.asBool()};
+      } else {
+        ROS_ERROR_STREAM("Unknown command for log parameter.");
+        wanted_log_list = {radiation_use_logarithm_};
+      }
+      ROS_INFO_STREAM(
+          "Wanted lin / log setting(s): " << vec2str(wanted_log_list));
+
+      /// Parse wanted color map scheme(s) from message
+      if (cmd_cms.isArray()) {
+        for (Json::Value::iterator it = cmd_cms.begin(); it != cmd_cms.end();
+             ++it) {
+          wanted_cms_list.push_back(it->asString());
         }
-        ROS_INFO_STREAM("Wanted color map scheme(s): " << vec2str(wanted_cms_list));
-
-        /// Parse from message how color map should be adjusted to extreme values
-        if (cmd_aev.isArray()) {
-          for (Json::Value::iterator it = cmd_aev.begin(); it != cmd_aev.end(); ++it) {
-            wanted_aev_list.push_back(it->asString());
-          }
-        } else if (cmd_aev.asString() == "all") {
-          wanted_aev_list = {"mesh", "rdf", "none"};
-        } else {
-          wanted_aev_list = {cmd_aev.asString()};
+      } else if (cmd_cms.asString() == "all") {
+        auto map = getCMSMap();
+        for (auto it = map.begin(); it != map.end(); ++it) {
+          wanted_cms_list.push_back(it->first);
         }
-        ROS_INFO_STREAM("Wanted extreme value adjustment setting(s): " << vec2str(wanted_aev_list));
+      } else if (cmd_cms.asString() == "original") {
+        wanted_cms_list = {radiation_distance_function_name_};
+      } else {
+        wanted_cms_list = {cmd_cms.asString()};
+      }
+      ROS_INFO_STREAM(
+          "Wanted color map scheme(s): " << vec2str(wanted_cms_list));
 
-        for (const std::string& aev : wanted_aev_list) {
-          for (const std::string& cms : wanted_cms_list) {
-            for (const bool log : wanted_log_list) {
-              for (const std::string& rdf : wanted_rdf_list) {
-                generateMesh(rdf, log, cms, aev);
-              }
+      /// Parse from message how color map should be adjusted to extreme values
+      if (cmd_aev.isArray()) {
+        for (Json::Value::iterator it = cmd_aev.begin(); it != cmd_aev.end();
+             ++it) {
+          wanted_aev_list.push_back(it->asString());
+        }
+      } else if (cmd_aev.asString() == "all") {
+        wanted_aev_list = {"mesh", "rdf", "none"};
+      } else {
+        wanted_aev_list = {cmd_aev.asString()};
+      }
+      ROS_INFO_STREAM("Wanted extreme value adjustment setting(s): "
+                      << vec2str(wanted_aev_list));
+
+      for (const std::string& aev : wanted_aev_list) {
+        for (const std::string& cms : wanted_cms_list) {
+          for (const bool log : wanted_log_list) {
+            for (const std::string& rdf : wanted_rdf_list) {
+              generateMesh(rdf, log, cms, aev);
             }
           }
         }
-
-      } else if (cmd.asString() == "original") {
-        generateMesh();
       }
     }
   }

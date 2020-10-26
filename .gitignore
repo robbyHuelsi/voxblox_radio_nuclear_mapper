@@ -36,6 +36,9 @@
 # Python (for lint)
 *.pyc
 
+# Make
+cmake-build-debug/
+
 # Temporary files
 *~
 
