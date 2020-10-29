@@ -114,15 +114,29 @@ To export the mesh in the intensity display as it was set in the launch file and
 
 `rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'original'"` (Pay attention to the double single quotes combination!)
 
-Also all combinations of the intensity representation can be exported with one single command. Six meshes are then saved with the three different distance functions as well as with logarithmic and linear intensity representation. The colormap will be the trafic light colormap. To do this, execute this command:
+Also a different intensity representation or a bunch of representations can be exported using a command including a JSON-like dictionary, which includes the wanted preferences.
 
-`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'all'"`
+**Example:**
+```
+{
+    "rdf": "all",                                   // Radiation Distance Function(s)
+    "log": true,                                    // Linear (false) or Logarithmic (true) Representation(s)
+    "cms": ["traffic-light", "inverse_grayscale"],  // Color Map Scheme(s)
+    "aev": "rdf"                                    // Extreme Value Adjustment Setting(s)
+}
+```
+
+To create such meshes, the command is now executed as follows:
+
+`rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'{\"rdf\": \"all\", \"log\": true, \"cms\": [\"traffic-light\", \"inverse_grayscale\"], \"aev\": \"rdf\"}'"`
+
+In this example six meshes in .ply format are then saved with the three different distance functions as well as with two different color map schemes. In addition for each mesh a .json file with meta information (currently only minimal and maximal intensity values in this mesh) will also be created. The files can be found at `~/.ros`. For more details about mesh export parameters see bellow.
+
+After executing the exporting command a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the export if it is still running.) In the terminal that runs the voxblox node you can see the progress of exporting.
+
+### Mesh Export Parameters
 
 Instead of `"'original'"` or `"'all'"` you can use `"'decreasing'"`, `"'increasing'"` or `"'constant'"` to export one mesh with the corresponding radiation distance function. The colormap will be the trafic light colormap. The setting whether the logarithm should be used to visualize the intensity or not is taken from the voxblox launch file.
-
-After executing one of the lines above a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the exporting.) In the terminal that runs the voxblox node you can see the progress of exporting.
-
-The exported meshes can then be found as .ply files at `~/.ros`.
 
 When exporting the meshes, to define the color gradient, the minimum and maximum are redefined according to the extreme values in the generated mesh. These values may differ from the values set in the launch file. This ensures that the whole range of the color map is used.
 
