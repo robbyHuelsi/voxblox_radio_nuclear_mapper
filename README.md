@@ -170,9 +170,13 @@ This key defines wanted color map scheme(s). Allowed values are:
 For more details about Color Map Schemes see [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#radiation_colormap).
 
 #### `"aev"`
-Extreme Value Adjustment Setting(s)
-
-When exporting the meshes, to define the color gradient, the minimum and maximum are redefined according to the extreme values in the generated mesh. These values may differ from the values set in the launch file. This ensures that the whole range of the color map is used.
+To define the color gradient, the minimum and maximum can redefined according to the extreme values. Therefore are multiple options.
+This key defines wanted extreme value adjustment setting(s). Allowed values:
+- `"mesh"`: Use extreme values of generated mesh. This ensures that the whole range of the color map is used.
+- `"rdf"`: Define extreme values using the most extreme possible values given by the combination of maximum and minimum value in sensor message (defined in launch file), selected maximum distance and selected radiation distance function and the choice whether to use logarithm or not. This ist the same method used to pubish mesh online for example to display in rviz.
+- `"none"`: No adjustment
+- `"'all'"`: All three settings 
+- Array (`[]`) including one or multiple of the strings representing the corresponding settings 
 
 ## 4. Further Information
 To get a better understanding of the project, you can also read the description of the parameters in the launch files for Voxblox [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#voxblox_rnm_launch).
