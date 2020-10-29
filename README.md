@@ -171,7 +171,7 @@ For more details about Color Map Schemes see [here](https://github.com/tu-darmst
 
 #### `"aev"`
 To define the color gradient, the minimum and maximum can redefined according to the extreme values. Therefore are multiple options.
-This key defines wanted extreme value adjustment setting(s). Allowed values:
+This key defines wanted extreme value adjustment setting(s). Allowed values are:
 - `"mesh"`: Use extreme values of generated mesh. This ensures that the whole range of the color map is used.
 - `"rdf"`: Define extreme values using the most extreme possible values given by the combination of maximum and minimum value in sensor message (defined in launch file), selected maximum distance and selected radiation distance function and the choice whether to use logarithm or not. This ist the same method used to pubish mesh online for example to display in rviz.
 - `"none"`: No adjustment
