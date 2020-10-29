@@ -130,13 +130,47 @@ To create such meshes, the command is now executed as follows:
 
 `rostopic pub /radio_nuclear_mapper_server/save_mesh std_msgs/String "'{\"rdf\": \"all\", \"log\": true, \"cms\": [\"traffic-light\", \"inverse_grayscale\"], \"aev\": \"rdf\"}'"`
 
-In this example six meshes in .ply format are then saved with the three different distance functions as well as with two different color map schemes. In addition for each mesh a .json file with meta information (currently only minimal and maximal intensity values in this mesh) will also be created. The files can be found at `~/.ros`. For more details about mesh export parameters see bellow.
+In this example six meshes in .ply format are then saved with the three different distance functions as well as with two different color map schemes. In addition for each mesh a .json file with meta information (currently only minimal and maximal intensity values in this mesh) will also be created. The files can be found at `~/.ros`. For more details about mesh export preferences see bellow.
 
 After executing the exporting command a single message will published to the Voxblox node and its start the export. Press `CMD` + `C` to stop the publishing task. (This will not stop the export if it is still running.) In the terminal that runs the voxblox node you can see the progress of exporting.
 
 ### Mesh Export Parameters
 
-Instead of `"'original'"` or `"'all'"` you can use `"'decreasing'"`, `"'increasing'"` or `"'constant'"` to export one mesh with the corresponding radiation distance function. The colormap will be the trafic light colormap. The setting whether the logarithm should be used to visualize the intensity or not is taken from the voxblox launch file.
+#### `"rdf"`
+This key defines wanted radiation distance function(s). Allowed values are:
+
+- `"'decreasing'"`: Decreasing RDF
+- `"'increasing'"`: Increasing RDF
+- `"'constant'"`: Constant RDF
+- `"'original'"`: The RDF defined in launch file
+- `"'all'"`: All three RSFs 
+- Array (`[]`) including one or multiple of the strings representing the corresponding RDFs
+
+For more details about RDF see [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#radiation_distance_function).
+
+#### `"log"`
+This key defines if linear or logarithmic representation(s) are wanted. Allowed values are
+- `true`: logarithmic
+- `false`: linear
+- `"'original'"`: preference defined in launch file
+- `"all"` / `"both"`: linear and logarithmic
+
+#### `"cms"`
+This key defines wanted color map scheme(s). Allowed values are:
+- `"rainbow"`: Rainbow CMS
+- `"inverse_rainbow"`: Inverse Rainbow CMS
+- `"grayscale"`: Grayscale CMS
+- `"inverse_grayscale"`: Inverse Grayscale CMS
+- `"ironbow"`: Ironbow CMS
+- `"traffic-light"`: Traffic Light CMS
+- `"'original'"`: The CMS defined in launch file
+- `"'all'"`: All six CMSs 
+- Array (`[]`) including one or multiple of the strings representing the corresponding CMSs
+
+For more details about Color Map Schemes see [here](https://github.com/tu-darmstadt-ros-pkg/hector_vehicle_launch/blob/radiological_nuclear_mapper/hector_sensor_proc_launch/launch/README.md#radiation_colormap).
+
+#### `"aev"`
+Extreme Value Adjustment Setting(s)
 
 When exporting the meshes, to define the color gradient, the minimum and maximum are redefined according to the extreme values in the generated mesh. These values may differ from the values set in the launch file. This ensures that the whole range of the color map is used.
 
