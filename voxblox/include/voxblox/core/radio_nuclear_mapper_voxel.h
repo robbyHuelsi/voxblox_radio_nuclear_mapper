@@ -8,6 +8,7 @@
 
 namespace voxblox {
   struct RadiationVoxel {
+    bool has_intensity = false;
     float intensity = 0.0f;
     float distance = std::numeric_limits<float>::infinity(); /// RH
   };

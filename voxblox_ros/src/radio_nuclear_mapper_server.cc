@@ -332,7 +332,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
                                                                  const RDFType& rad_dist_func,
                                                                  const bool use_logarithm){
     Color c;
-    if (voxel != nullptr) {
+    if (voxel != nullptr and voxel->has_intensity) {
       c = color_map->colorLookup(calcIntensity(voxel->intensity, voxel->distance, rad_dist_func, use_logarithm));
     } else {
       /// If voxel cannot found (no voxel at requested position) color black
@@ -423,15 +423,29 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
   }
 
   bool RadioNuclearMapperServer::generateMesh() {
+    /// Apply generateMesh() with current time stemp
+    time_t raw_time;
+    struct tm * time_info;
+    char time_buffer[80];
+    time (&raw_time);
+    time_info = localtime(&raw_time);
+    strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
+    std::string time_stemp_str = time_buffer;
+    return generateMesh(time_stemp_str);
+  }
+
+  bool RadioNuclearMapperServer::generateMesh(const std::string& time_stemp_str) {
     /// Apply generateMesh() with preset parameters
     return generateMesh(radiation_distance_function_name_,
                         radiation_use_logarithm_,
                         radiation_color_map_scheme_name_,
-                        "mesh");
+                        "mesh",
+                        time_stemp_str);
   }
 
   bool RadioNuclearMapperServer::generateMesh(const std::string& distance_function_name, const bool use_logarithm,
-                                              const std::string& color_map_scheme_name, const std::string& adjust_extr_val){
+                                              const std::string& color_map_scheme_name, const std::string& adjust_extr_val,
+                                              const std::string& time_stemp_str){
     // timing::Timer generate_mesh_timer("radiation_mesh/generate");
 
     /// Get mesh from parents (TSDF Server) mesh message
@@ -471,14 +485,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     // timing::Timer output_mesh_timer("radiation_mesh/output");
 
     /// Create file name including function, log, color map and time stamp
-    time_t raw_time;
-    struct tm * time_info;
-    char time_buffer[80];
-    time (&raw_time);
-    time_info = localtime(&raw_time);
-    strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
-    std::string time_str = time_buffer;
-    std::string filename = ident_str + "_" + time_str;
+    std::string filename = ident_str + "_" + time_stemp_str;
 
     /// Save mesh
     std::cout << "Exporting (" << ident_str << ") ... \r" <<std::flush;
@@ -494,8 +501,10 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
       if (meta_file.is_open())
       {
         meta_file << "{\n";
+        meta_file << "\t\"rosbag_time_sec\": " << last_time_stamp_.sec << ",\n";
+        meta_file << "\t\"rosbag_time_nsec\": " << last_time_stamp_.nsec << ",\n";
         meta_file << "\t\"intensity_min_value\": " << intensity_min_value << ",\n";
-        meta_file << "\t\"intensity_max_value\": " << intensity_max_value << ",\n";
+        meta_file << "\t\"intensity_max_value\": " << intensity_max_value << "\n";
         meta_file << "}\n";
         meta_file.close();
         // ROS_INFO_STREAM("Meta data exported as JSON: " << (filename + ".json").c_str());
@@ -532,7 +541,9 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
 
     /// Get value from radiation sensor subscriber message
     auto radiation_sensor_value = float(msg->value);
-    ROS_INFO_STREAM(current_callback_num << ": New radiation value: " << radiation_sensor_value);
+    ROS_INFO_STREAM(current_callback_num <<
+                    ": New radiation value: " << radiation_sensor_value <<
+                    " (time: " << msg->header.stamp << ")");
 
     /// Check if value between minimum and maximum
     if (radiation_sensor_value < radiation_msg_val_min_) {
@@ -548,11 +559,14 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     /// otherwise at the time of the last available transformation.
     Transformation T_G_C;
     if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_, msg->header.stamp, &T_G_C)) {
-      /// Successful with time from header - do nothing
+      /// Successful with time from header
+      last_time_stamp_ = ros::Time().now();  // = msg->header.stamp;
     } else if (transformer_.lookupTransform(radiation_sensor_frame_id_, world_frame_,
                                             ros::Time(0, 0), /// to get latest transformation
                                             &T_G_C)) {
-      /// Successful with latest transformation - do nothing
+      /// Successful with latest transformation
+      last_time_stamp_ = ros::Time().now();
+      ROS_INFO("    Successful with latest transformation");
     } else {
       /// Not successful
       ROS_WARN_STREAM(current_callback_num << ": Failed to look up intensity transform!");
@@ -570,6 +584,15 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
   void RadioNuclearMapperServer::saveMeshTriggerCallback(const std_msgs::StringConstPtr& msg) {
     CHECK(msg);
 
+    /// get current time for file names
+    time_t raw_time;
+    struct tm * time_info;
+    char time_buffer[80];
+    time (&raw_time);
+    time_info = localtime(&raw_time);
+    strftime(time_buffer,sizeof(time_buffer),"%Y-%m-%d-%H-%M-%S",time_info);
+    std::string time_stemp_str = time_buffer;
+
     /// Get value from subscriber message
     std::string message = msg->data;
     ROS_INFO_STREAM("Save mesh trigger message: " << message);
@@ -580,7 +603,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
     bool parsingSuccessful = reader.parse(message, cmd);
     if (!parsingSuccessful) {
       if (message == "original") {
-        generateMesh();
+        generateMesh(time_stemp_str);
       } else {
         ROS_ERROR_STREAM("The message does not contain a permitted shortcut, nor is in JSON format");
         ROS_INFO_STREAM("JSON Error: " << reader.getFormattedErrorMessages());
@@ -672,7 +695,7 @@ void RadioNuclearMapperServer::generateBearingVectors(const int n, Pointcloud& b
         for (const std::string& cms : wanted_cms_list) {
           for (const bool log : wanted_log_list) {
             for (const std::string& rdf : wanted_rdf_list) {
-              generateMesh(rdf, log, cms, aev);
+              generateMesh(rdf, log, cms, aev, time_stemp_str);
             }
           }
         }

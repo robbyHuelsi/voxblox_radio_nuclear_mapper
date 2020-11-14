@@ -40,8 +40,10 @@ namespace voxblox {
 
       /// Batch update (whole block: RH)
       bool generateMesh() override;
+      bool generateMesh(const std::string& time_stemp_str);
       bool generateMesh(const std::string& distance_function_name, bool use_logarithm,
-                        const std::string& color_map_scheme_name, const std::string& adjust_extr_val);
+                        const std::string& color_map_scheme_name, const std::string& adjust_extr_val,
+                        const std::string& time_stemp_str);
 
       /// Publishes all available pointclouds.
       void publishPointclouds() override;
@@ -66,6 +68,7 @@ namespace voxblox {
       size_t radiation_sensor_callback_counter_;
       std::string radiation_color_map_scheme_name_;
       std::shared_ptr<ColorMap> radiation_color_map_;
+      ros::Time last_time_stamp_;
 
       /// Parameters for mesh saving (RH)
       std::string save_mesh_trigger_topic_;

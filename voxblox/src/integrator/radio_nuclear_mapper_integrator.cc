@@ -66,6 +66,7 @@ namespace voxblox {
                                                               const float in_intensity, const float in_distance){
     /// If distance is lower (so confidence is higher) than the stored one, update distance and intensity
     /// If distance is equal to the stored one, update intensity, if new one is higher (pessimistic assumption)
+    voxel.has_intensity = true;
     if (in_distance < voxel.distance) {
       voxel.distance = in_distance;
       voxel.intensity = in_intensity;
